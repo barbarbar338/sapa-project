@@ -1,0 +1,19 @@
+{
+	"name": "arduino-njs",
+	"version": "1.0.0",
+	"main": "index.js",
+	"license": "MIT",
+	"scripts": {
+		"format": "prettier --write .",
+		"start": "node index.js"
+	},
+	"dependencies": {
+		"cors": "^2.8.5",
+		"express": "^4.21.1",
+		"johnny-five": "^2.1.0",
+		"socket.io": "^4.8.1"
+	},
+	"devDependencies": {
+		"prettier": "^3.3.3"
+	}
+}
