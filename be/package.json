@@ -1,8 +1,21 @@
 {
-	"name": "arduino-njs",
-	"version": "1.0.0",
+	"name": "digital-stethoscope-be",
+	"description": "AGU SAPA project: Digital stethoscope - Backend server",
+	"version": "0.0.1-alpha.0",
 	"main": "index.js",
-	"license": "MIT",
+	"license": "GPL-3.0",
+	"author": {
+		"name": "Barış DEMİRCİ",
+		"email": "hi@338.rocks",
+		"url": "https://338.rocks"
+	},
+	"contributors": [],
+	"packageManager": "yarn@1.22.22",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/barbarbar338/sapa-project"
+	},
+	"private": true,
 	"scripts": {
 		"format": "prettier --write .",
 		"start": "node index.js"

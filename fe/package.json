@@ -1,7 +1,28 @@
 {
-	"name": "frontend",
-	"version": "0.1.0",
+	"name": "digital-stethoscope-fe",
+	"description": "AGU SAPA project: Digital stethoscope - Frontend",
+	"version": "0.0.1-alpha.0",
+	"main": "index.js",
+	"license": "GPL-3.0",
+	"author": {
+		"name": "Barış DEMİRCİ",
+		"email": "hi@338.rocks",
+		"url": "https://338.rocks"
+	},
+	"contributors": [],
+	"packageManager": "yarn@1.22.22",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/barbarbar338/sapa-project"
+	},
 	"private": true,
+	"scripts": {
+		"start": "react-scripts start",
+		"build": "react-scripts build",
+		"test": "react-scripts test",
+		"eject": "react-scripts eject",
+		"format": "prettier --write ."
+	},
 	"dependencies": {
 		"chart.js": "^3",
 		"chartjs-adapter-moment": "^1.0.1",
@@ -14,12 +35,9 @@
 		"socket.io-client": "^4.8.1",
 		"web-vitals": "^2.1.0"
 	},
-	"scripts": {
-		"start": "react-scripts start",
-		"build": "react-scripts build",
-		"test": "react-scripts test",
-		"eject": "react-scripts eject",
-		"format": "prettier --write ."
+	"devDependencies": {
+		"prettier": "^3.3.3",
+		"tailwindcss": "^3.4.14"
 	},
 	"eslintConfig": {
 		"extends": [
@@ -38,9 +56,5 @@
 			"last 1 firefox version",
 			"last 1 safari version"
 		]
-	},
-	"devDependencies": {
-		"prettier": "^3.3.3",
-		"tailwindcss": "^3.4.14"
 	}
 }
