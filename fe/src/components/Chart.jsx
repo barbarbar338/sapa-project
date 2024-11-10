@@ -25,7 +25,7 @@ export const RealTimeChart = () => {
 		const onMic = (data) => {
 			const newDataPoint = {
 				x: Date.now(),
-				y: data,
+				y: data / 250,
 			};
 
 			setData((prevData) => {
@@ -62,14 +62,16 @@ export const RealTimeChart = () => {
 			x: {
 				type: "realtime",
 				realtime: {
-					duration: 1000 * 10, // Display the last 10 seconds of data
-					refresh: 1000 * 1, // Refresh every second
-					delay: 1000 * 0.1, // Delay of 0.1 second to keep it smooth
+					duration: 1000 * 10,
+					refresh: 1000 * 0.001,
+					delay: 1000 * 0.001,
 					pause: false,
 				},
 			},
 			y: {
 				beginAtZero: true,
+				min: 0,
+				max: +5,
 			},
 		},
 		plugins: {
