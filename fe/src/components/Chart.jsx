@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
+import { socket } from "../socket.js";
 
 export const RealTimeChart = () => {
+	const [isConnected, setIsConnected] = useState(socket.connected);
 	const [data, setData] = useState({
 		datasets: [
 			{
@@ -14,10 +16,16 @@ export const RealTimeChart = () => {
 	});
 
 	useEffect(() => {
-		const interval = setInterval(() => {
+		const onConnect = () => {
+			setIsConnected(true);
+		};
+		const onDisconnect = () => {
+			setIsConnected(false);
+		};
+		const onMic = (data) => {
 			const newDataPoint = {
 				x: Date.now(),
-				y: Math.floor(Math.random() * 100),
+				y: data,
 			};
 
 			setData((prevData) => {
@@ -34,9 +42,17 @@ export const RealTimeChart = () => {
 					],
 				};
 			});
-		}, 10);
+		};
 
-		return () => clearInterval(interval);
+		socket.on("connect", onConnect);
+		socket.on("disconnect", onDisconnect);
+		socket.on("mic", onMic);
+
+		return () => {
+			socket.off("connect", onConnect);
+			socket.off("disconnect", onDisconnect);
+			socket.off("mic", onMic);
+		};
 	}, []);
 
 	const options = {
@@ -65,6 +81,8 @@ export const RealTimeChart = () => {
 
 	return (
 		<div>
+			<h1>Real-time Mic Output</h1>
+			<h1>{isConnected ? "Connected!" : "Awaiting connection"}</h1>
 			<Line data={data} options={options} />
 		</div>
 	);
