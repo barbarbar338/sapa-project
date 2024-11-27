@@ -45,6 +45,9 @@ This project is a simple electric stethoscope that can be used to listen to the 
 - Open the `localhost:3000` on your browser
 - Enjoy!
 
+# Circuit Diagram
+![Circuit Diagram](circuit_diagram.png)
+
 # Authors
 - [Barış DEMİRCİ](hi@338.rocks)
 - Selin Nisa AKGÖL
