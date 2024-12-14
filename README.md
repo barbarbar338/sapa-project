@@ -46,7 +46,14 @@ This project is a simple electric stethoscope that can be used to listen to the 
 - Enjoy!
 
 # Circuit Diagram
-![Circuit Diagram](circuit_diagram.png)
+![Circuit Diagram](images/circuit_diagram.png)
+
+# Gallery
+![Circuit Front](images/circuit-front.jpg)
+![Circuit Back](images/circuit-back.jpg)
+![Circuit in Box](images/circuit-in-box.jpg)
+![Closed Box](images/closed-box.jpg)
+
 
 # Authors
 - [Barış DEMİRCİ](hi@338.rocks)
