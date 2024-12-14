@@ -56,6 +56,6 @@ This project is a simple electric stethoscope that can be used to listen to the 
 
 
 # Authors
-- [Barış DEMİRCİ](hi@338.rocks)
+- [Barış DEMİRCİ](https://338.rocks)
 - Selin Nisa AKGÖL
 - Nuri İNCEÖZ
