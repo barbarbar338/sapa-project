@@ -8,23 +8,23 @@ This project is a simple electric stethoscope that can be used to listen to the 
 - Arduino Uno
 - 2 wire electret microphone
 - Doctor's stethoscope
-- 3 x LED 
-- 3 x Switch
 - Resistors
-    - 2 x 1kOhm
-    - 4 x 8kOhm
-    - 4 x 6kOhm
-    - 2 x 5kOhm
-    - 2 x 10kOhm
-    - 1 x 20kOhm
+    - 1 x 1kΩ
+    - 1 x 4.7kΩ
+    - 2 x 10kΩ
+    - 1 x 22kΩ
+    - 1 x 100kΩ
 - Capacitors
-    - 2 x 1nF
-    - 2 x 10nF
-    - 2 x 100nF
-    - 2 x 1uF
-- 3 x Low-Noise Operational Amplifier (2 x TL072)
+    - 1 x 5nF
+    - 1 x 470nF
+    - 1 x 1uF
+- 1 x Low-Noise Operational Amplifier (1 x NE5532)
 - Breadboard
 - Jumper wires
+- Optional:
+    - Soldering iron and its accessories
+    - Pertinax board to solder the circuit (or you can simply buy a PCB)
+    - 3D printer to print the box for the circuit
 
 ## Software
 - Arduino IDE
