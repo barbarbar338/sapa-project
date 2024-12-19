@@ -14,7 +14,6 @@ export const RealTimeChart = () => {
 			},
 		],
 	});
-
 	const [spectrumData, setSpectrumData] = useState([]);
 	const [labels, setLabels] = useState([]);
 
@@ -25,10 +24,10 @@ export const RealTimeChart = () => {
 		const onDisconnect = () => {
 			setIsConnected(false);
 		};
-		const onMic = (data) => {
+		const onMic = (micData) => {
 			const newDataPoint = {
 				x: Date.now(),
-				y: (data / 1023) * 5,
+				y: (micData / 1023) * 5,
 			};
 
 			setData((prevData) => {
@@ -45,10 +44,16 @@ export const RealTimeChart = () => {
 					],
 				};
 			});
+
+			const values = data.datasets[0].data.map((d) => d.y);
+			socket.emit("filter", values, 10, 50);
+		};
+
+		const onFilter = (filterData) => {
+			console.log(filterData)
 		};
 
 		const onFft = (spectrum) => {
-			console.log(spectrum);
 			setSpectrumData(spectrum.magnitudes);
 			setLabels(spectrum.frequencies);
 		};
@@ -57,12 +62,14 @@ export const RealTimeChart = () => {
 		socket.on("disconnect", onDisconnect);
 		socket.on("mic", onMic);
 		socket.on("fft", onFft);
+		socket.on("filter", onFilter);
 
 		return () => {
 			socket.off("connect");
 			socket.off("disconnect");
 			socket.off("mic");
 			socket.off("fft");
+			socket.off("filter");
 		};
 	}, []);
 

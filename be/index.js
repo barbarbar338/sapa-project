@@ -37,6 +37,11 @@ io.on("connection", (socket) => {
 		socket.emit("fft", resp);
 	});
 
+	socket.on("filter", (signal, lowCutoff, highCutoff) => {
+		const resp = bandPassFilter(signal, lowCutoff, highCutoff, sampleRate);
+		socket.emit("filter", resp);
+	});
+
 	socket.on("disconnect", () => {
 		console.log("A user disconnected!");
 	});
@@ -60,6 +65,5 @@ board.on("ready", () => {
 
 	mic.on("data", (data) => {
 		io.emit("mic", data);
-
 	});
 });
