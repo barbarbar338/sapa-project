@@ -22,7 +22,10 @@
 	},
 	"dependencies": {
 		"cors": "^2.8.5",
+		"dsp.js": "^1.0.1",
 		"express": "^4.21.1",
+		"fft-js": "^0.0.12",
+		"fft.js": "^4.0.4",
 		"johnny-five": "^2.1.0",
 		"socket.io": "^4.8.1"
 	},

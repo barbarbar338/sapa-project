@@ -3,9 +3,12 @@ const express = require("express");
 const http = require("node:http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const { bandPassFilter } = require("./filters.js");
+const { fftTest } = require("./fft.js");
 
 const port = 3001;
 const analog_pin = "A0";
+const sampleRate = 44100;
 
 const board = new Board();
 const app = express();
@@ -27,6 +30,12 @@ app.get("/", (_, res) => {
 
 io.on("connection", (socket) => {
 	console.log("A user connected!");
+
+	socket.on("fft", (data) => {
+		const resp = fftTest(data, sampleRate);
+
+		socket.emit("fft", resp);
+	});
 
 	socket.on("disconnect", () => {
 		console.log("A user disconnected!");
@@ -51,6 +60,6 @@ board.on("ready", () => {
 
 	mic.on("data", (data) => {
 		io.emit("mic", data);
-		console.log(data);
+
 	});
 });

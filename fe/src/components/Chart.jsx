@@ -15,6 +15,9 @@ export const RealTimeChart = () => {
 		],
 	});
 
+	const [spectrumData, setSpectrumData] = useState([]);
+	const [labels, setLabels] = useState([]);
+
 	useEffect(() => {
 		const onConnect = () => {
 			setIsConnected(true);
@@ -25,7 +28,7 @@ export const RealTimeChart = () => {
 		const onMic = (data) => {
 			const newDataPoint = {
 				x: Date.now(),
-				y: data,
+				y: (data / 1023) * 5,
 			};
 
 			setData((prevData) => {
@@ -44,16 +47,29 @@ export const RealTimeChart = () => {
 			});
 		};
 
+		const onFft = (spectrum) => {
+			console.log(spectrum);
+			setSpectrumData(spectrum.magnitudes);
+			setLabels(spectrum.frequencies);
+		};
+
 		socket.on("connect", onConnect);
 		socket.on("disconnect", onDisconnect);
 		socket.on("mic", onMic);
+		socket.on("fft", onFft);
 
 		return () => {
-			socket.off("connect", onConnect);
-			socket.off("disconnect", onDisconnect);
-			socket.off("mic", onMic);
+			socket.off("connect");
+			socket.off("disconnect");
+			socket.off("mic");
+			socket.off("fft");
 		};
 	}, []);
+
+	function test() {
+		const values = data.datasets[0].data.map((d) => d.y);
+		socket.emit("fft", values);
+	}
 
 	const options = {
 		responsive: true,
@@ -70,8 +86,8 @@ export const RealTimeChart = () => {
 			},
 			y: {
 				beginAtZero: true,
-				//min: 0,
-				//max: +5,
+				min: 0,
+				max: +5,
 			},
 		},
 		plugins: {
@@ -81,11 +97,78 @@ export const RealTimeChart = () => {
 		},
 	};
 
+	const spectrumChartData = {
+		labels: labels, // Frequency labels for the x-axis
+		datasets: [
+			{
+				label: "Frequency Spectrum",
+				data: spectrumData, // Magnitude values from FFT
+				borderColor: "rgba(75,192,192,1)", // Line color
+				backgroundColor: "rgba(75,192,192,0.2)", // Background color
+				fill: false, // Do not fill the area under the curve
+			},
+		],
+	};
+
+	const spectrumChartOptions = {
+		responsive: true,
+		animation: false,
+		plugins: {
+			title: {
+				display: true,
+				text: "Real-Time Frequency Spectrum",
+			},
+		},
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: "Frequency (Hz)",
+				},
+			},
+			y: {
+				title: {
+					display: true,
+					text: "Magnitude",
+				},
+			},
+		},
+	};
+
 	return (
 		<div>
 			<h1>Real-time Mic Output</h1>
 			<h1>{isConnected ? "Connected!" : "Awaiting connection"}</h1>
-			<Line data={data} options={options} />
+			<button onClick={test}>Test</button>
+			<div className="w-screen flex-wrap h-screen flex items-center justify-around">
+				<div className="mb-2 bg-gray-100 py-6 px-6 rounded-md flex justify-center">
+					<Line
+						className="h-full w-full"
+						data={data}
+						options={options}
+						height={512}
+						width={512}
+					/>
+				</div>
+				<div className="mb-2 bg-gray-100 py-6 px-6 rounded-md flex flex-col justify-center">
+					<Line
+						className="h-full w-full"
+						data={data}
+						options={options}
+						height={512}
+						width={512}
+					/>
+				</div>
+				<div className="mb-2 bg-gray-100 py-6 px-6 rounded-md flex flex-col justify-center">
+					<Line
+						className="h-full w-full"
+						data={spectrumChartData}
+						options={spectrumChartOptions}
+						height={512}
+						width={512}
+					/>
+				</div>
+			</div>
 		</div>
 	);
 };
