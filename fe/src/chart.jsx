@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { socket } from "../socket.js";
+import { socket } from "./socket.js";
 
 export const RealTimeChart = () => {
 	// WebSocket connection state
