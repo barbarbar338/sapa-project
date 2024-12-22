@@ -124,6 +124,11 @@ export const RealTimeChart = () => {
 		spectrumStart,
 	]);
 
+	function test() {
+		const values = data.datasets[0].data.map((d) => d.y);
+		socket.emit("fft", values);
+	}
+
 	const options = {
 		responsive: true,
 		animation: false,
@@ -156,7 +161,7 @@ export const RealTimeChart = () => {
 			{
 				label: "Frequency Spectrum",
 				data: spectrumData, // Magnitude values from FFT
-				borderColor: "blue", // Line color
+				borderColor: "rgba(75,192,192,1)", // Line color
 				backgroundColor: "rgba(75,192,192,0.2)", // Background color
 				fill: false, // Do not fill the area under the curve
 			},
@@ -169,7 +174,8 @@ export const RealTimeChart = () => {
 			{
 				label: "Filtered Frequency Spectrum",
 				data: filteredSpectrumData, // Magnitude values from FFT
-				borderColor: "red", // Line color
+				borderColor: "rgba(75,192,192,1)", // Line color
+				backgroundColor: "rgba(75,192,192,0.2)", // Background color
 				fill: false, // Do not fill the area under the curve
 			},
 		],
@@ -192,103 +198,17 @@ export const RealTimeChart = () => {
 				},
 				beginAtZero: true,
 				min: 0,
-				max: 80
 			},
 		},
 	};
 
 	return (
-		<div className="flex flex-col items-center space-y-6 p-6">
-			{/* WebSocket Connection Indicator */}
-			<div
-				className={`text-sm font-bold px-4 py-2 rounded-md ${
-					isConnected
-						? "bg-green-500 text-white"
-						: "bg-red-500 text-white"
-				}`}
-			>
-				Microphone Websocket {isConnected ? "Connected" : "Disconnected"}
-			</div>
-
-			{/* Input Controls */}
-			<div className="grid grid-cols-2 gap-4 w-full max-w-md">
-				{/* Bandpass Inputs */}
-				<div className="col-span-2 text-center font-semibold">
-					Bandpass Filter
-				</div>
-				
-				<div className="flex flex-col items-start">
-					<label
-						htmlFor="bandpass-high"
-						className="text-sm font-medium"
-					>
-						High-pass (Hz)
-					</label>
-					<input
-						type="number"
-						value={highPass}
-						onChange={(e) => setHighPass(Number(e.target.value))}
-						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
-					/>
-				</div>
-
-				<div className="flex flex-col items-start">
-					<label
-						htmlFor="bandpass-low"
-						className="text-sm font-medium"
-					>
-						Low-pass (Hz)
-					</label>
-					<input
-						id="bandpass-low"
-						type="number"
-						value={lowPass}
-						onChange={(e) => setLowPass(Number(e.target.value))}
-						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
-					/>
-				</div>
-
-				{/* Spectrum Region Inputs */}
-				<div className="col-span-2 text-center font-semibold mt-4">
-					Spectrum Region
-				</div>
-				<div className="flex flex-col items-start">
-					<label
-						htmlFor="spectrum-low"
-						className="text-sm font-medium"
-					>
-						Low (Hz)
-					</label>
-					<input
-						id="spectrum-low"
-						type="number"
-						value={spectrumStart}
-						onChange={(e) =>
-							setSpectrumStart(Number(e.target.value))
-						}
-						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
-					/>
-				</div>
-				<div className="flex flex-col items-start">
-					<label
-						htmlFor="spectrum-high"
-						className="text-sm font-medium"
-					>
-						High (Hz)
-					</label>
-					<input
-						id="spectrum-high"
-						type="number"
-						value={spectrumEnd}
-						onChange={(e) => setSpectrumEnd(Number(e.target.value))}
-						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
-					/>
-				</div>
-			</div>
-
-			{/* Charts */}
-			<div className="grid grid-cols-2 gap-4 w-full max-w-4xl">
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+		<div>
+			<h1>Real-time Mic Output</h1>
+			<h1>{isConnected ? "Connected!" : "Awaiting connection"}</h1>
+			<button onClick={test}>Test</button>
+			<div className="w-screen flex-wrap h-screen flex items-center justify-around">
+				<div className="mb-2 bg-gray-100 py-6 px-6 rounded-md flex justify-center">
 					<Line
 						className="h-full w-full"
 						data={data}
@@ -297,7 +217,7 @@ export const RealTimeChart = () => {
 						width={512}
 					/>
 				</div>
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+				<div className="mb-2 bg-gray-100 py-6 px-6 rounded-md flex flex-col justify-center">
 					<Line
 						className="h-full w-full"
 						data={filteredData}
@@ -306,7 +226,7 @@ export const RealTimeChart = () => {
 						width={512}
 					/>
 				</div>
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+				<div className="mb-2 bg-gray-100 py-6 px-6 rounded-md flex flex-col justify-center">
 					<Line
 						className="h-full w-full"
 						data={spectrumChartData}
@@ -315,7 +235,7 @@ export const RealTimeChart = () => {
 						width={512}
 					/>
 				</div>
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+				<div className="mb-2 bg-gray-100 py-6 px-6 rounded-md flex flex-col justify-center">
 					<Line
 						className="h-full w-full"
 						data={filteredSpectrumChartData}

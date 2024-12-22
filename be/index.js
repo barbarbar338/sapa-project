@@ -31,10 +31,10 @@ app.get("/", (_, res) => {
 io.on("connection", (socket) => {
 	console.log("A user connected!");
 
-	socket.on("fft", (data) => {
-		const resp = fftTest(data, sampleRate);
+	socket.on("fft", (type, data, startFreq, endFreq) => {
+		const resp = fftTest(data, sampleRate, startFreq, endFreq);
 
-		socket.emit("fft", resp);
+		socket.emit("fft", type, resp);
 	});
 
 	socket.on("filter", (signal, lowCutoff, highCutoff) => {
