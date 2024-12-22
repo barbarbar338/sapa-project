@@ -34,7 +34,9 @@ This project is a simple electric stethoscope that can be used to listen to the 
 - Node.js 20 or higher
 - Visual Studio Build Tools 2017 or higher
 - Python 3.6 or higher
-- Yarn 1.22.22
+- Yarn 1.22.22 or higher
+- Rust 1.83.0 or higher
+- Tauri (With its dependencies)
 
 ## Running the project
 
