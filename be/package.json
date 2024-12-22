@@ -1,7 +1,7 @@
 {
 	"name": "digital-stethoscope-be",
 	"description": "AGU SAPA project: Digital stethoscope - Backend server",
-	"version": "0.0.1-alpha.0",
+	"version": "0.1.0",
 	"main": "index.js",
 	"license": "GPL-3.0",
 	"author": {
@@ -22,10 +22,7 @@
 	},
 	"dependencies": {
 		"cors": "^2.8.5",
-		"dsp.js": "^1.0.1",
 		"express": "^4.21.1",
-		"fft-js": "^0.0.12",
-		"fft.js": "^4.0.4",
 		"johnny-five": "^2.1.0",
 		"socket.io": "^4.8.1"
 	},

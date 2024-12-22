@@ -1,11 +1,7 @@
 import { RealTimeChart } from "./components/Chart.jsx";
 
 function App() {
-	return (
-		<div>
-			<RealTimeChart />
-		</div>
-	);
+	return <RealTimeChart />;
 }
 
 export default App;

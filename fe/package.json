@@ -1,7 +1,7 @@
 {
 	"name": "digital-stethoscope-fe",
 	"description": "AGU SAPA project: Digital stethoscope - Frontend",
-	"version": "0.0.1-alpha.0",
+	"version": "0.1.0",
 	"main": "index.js",
 	"license": "GPL-3.0",
 	"author": {
@@ -27,7 +27,6 @@
 		"chart.js": "^3",
 		"chartjs-adapter-moment": "^1.0.1",
 		"chartjs-plugin-streaming": "^2.0.0",
-		"fft.js": "^4.0.4",
 		"moment": "^2.30.1",
 		"react": "^18.3.1",
 		"react-chartjs-2": "^5.2.0",

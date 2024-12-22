@@ -4,8 +4,9 @@ const http = require("node:http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const { bandPassFilter } = require("./filters.js");
-const { fftTest } = require("./fft.js");
+const { CooleyTukeyFFT } = require("./fft.js");
 
+// Constants
 const port = 3001;
 const analog_pin = "A0";
 const sampleRate = 44100;
@@ -29,15 +30,36 @@ app.get("/", (_, res) => {
 });
 
 io.on("connection", (socket) => {
-	console.log("A user connected!");
+	console.log("GUI connected!");
 
-	socket.on("fft", (type, data, startFreq, endFreq) => {
-		const resp = fftTest(data, sampleRate, startFreq, endFreq);
+	socket.on("fft", 
+		/**
+		 * Perform FFT on the incoming data
+		 * 
+		 * @param {"normal" | "filtered"} type - The type of FFT data (normal or filtered)
+		 * @param {*} data - The data to perform FFT on
+		 * @param {*} startFreq - Spectrum start frequency
+		 * @param {*} endFreq - Spectrum end frequency
+		 * @returns {void}
+		 * @emits fft event with the signal spectrum
+		 */
+		(type, data, startFreq, endFreq) => {
+		const resp = CooleyTukeyFFT(data, sampleRate, startFreq, endFreq);
 
 		socket.emit("fft", type, resp);
 	});
 
-	socket.on("filter", (signal, lowCutoff, highCutoff) => {
+	socket.on("filter", 
+		/**
+		 * Perform band-pass filter on the incoming signal
+		 * 
+		 * @param {number[]} signal - The signal to filter
+		 * @param {number} lowCutoff - Low-pass cutoff frequency
+		 * @param {number} highCutoff - High-pass cutoff frequency
+		 * @returns {void}
+		 * @emits filter event with the filtered signal
+		 */
+		(signal, lowCutoff, highCutoff) => {
 		const resp = bandPassFilter(signal, lowCutoff, highCutoff, sampleRate);
 		socket.emit("filter", resp);
 	});
@@ -64,6 +86,7 @@ board.on("ready", () => {
 	});
 
 	mic.on("data", (data) => {
+		// Emit microphone data directly to the GUI
 		io.emit("mic", data);
 	});
 });

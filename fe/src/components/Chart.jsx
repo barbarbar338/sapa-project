@@ -3,7 +3,10 @@ import { Line } from "react-chartjs-2";
 import { socket } from "../socket.js";
 
 export const RealTimeChart = () => {
+	// WebSocket connection state
 	const [isConnected, setIsConnected] = useState(socket.connected);
+
+	// Mic data state
 	const [data, setData] = useState({
 		datasets: [
 			{
@@ -24,10 +27,16 @@ export const RealTimeChart = () => {
 			},
 		],
 	});
+
+	// FFT data state
 	const [spectrumData, setSpectrumData] = useState([]);
 	const [filteredSpectrumData, setFilteredSpectrumData] = useState([]);
+
+	// FFT labels state
 	const [labels, setLabels] = useState([]);
 	const [filteredLabels, setFilteredLabels] = useState([]);
+
+	// Filter and spectrum region state
 	const [highPass, setHighPass] = useState(20);
 	const [lowPass, setLowPass] = useState(20000);
 	const [spectrumStart, setSpectrumStart] = useState(20);
@@ -40,6 +49,16 @@ export const RealTimeChart = () => {
 		const onDisconnect = () => {
 			setIsConnected(false);
 		};
+
+		/**
+		 * Handle incoming microphone data
+		 *
+		 * @param {Number} micData - The microphone data value
+		 * @returns {void}
+		 * @sideeffect Updates the mic data state
+		 * @emits filter event with the mic data
+		 * @emits fft event with the mic data
+		 */
 		const onMic = (micData) => {
 			const newDataPoint = {
 				x: Date.now(),
@@ -61,11 +80,20 @@ export const RealTimeChart = () => {
 				};
 			});
 
+			// Emit the filter and FFT events
 			const values = data.datasets[0].data.map((d) => d.y);
 			socket.emit("filter", values, highPass, lowPass);
 			socket.emit("fft", "normal", values, spectrumStart, spectrumEnd);
 		};
 
+		/**
+		 * Handle incoming filtered data
+		 *
+		 * @param {Number[]} filterData - The filtered data values
+		 * @returns {void}
+		 * @sideeffect Updates the filtered data state
+		 * @emits fft event with the filtered data
+		 */
 		const onFilter = (filterData) => {
 			const newDataPoint = {
 				x: Date.now(),
@@ -87,10 +115,20 @@ export const RealTimeChart = () => {
 				};
 			});
 
+			// Emit the FFT event
 			const values = filteredData.datasets[0].data.map((d) => d.y);
 			socket.emit("fft", "filtered", values, spectrumStart, spectrumEnd);
 		};
 
+		/**
+		 * Handle incoming FFT data
+		 *
+		 * @param {"normal" | "filtered"} type - The type of FFT data (normal or filtered)
+		 * @param {Object} spectrum - The FFT data object
+		 * @returns {void}
+		 * @sideeffect Updates the spectrum data state
+		 * @sideeffect Updates the spectrum labels state
+		 */
 		const onFft = (type, spectrum) => {
 			if (type === "normal") {
 				setSpectrumData(spectrum.magnitudes);
@@ -102,12 +140,14 @@ export const RealTimeChart = () => {
 			}
 		};
 
+		// Attach event listeners
 		socket.on("connect", onConnect);
 		socket.on("disconnect", onDisconnect);
 		socket.on("mic", onMic);
 		socket.on("fft", onFft);
 		socket.on("filter", onFilter);
 
+		// Cleanup event listeners
 		return () => {
 			socket.off("connect");
 			socket.off("disconnect");
@@ -131,7 +171,7 @@ export const RealTimeChart = () => {
 			x: {
 				type: "realtime",
 				realtime: {
-					duration: 1000 * 5,
+					duration: 1000 * 5, // save/show last 5 seconds of data
 					refresh: 1000 * 0.0001,
 					delay: 1000 * 0.0001,
 					pause: false,
@@ -151,26 +191,25 @@ export const RealTimeChart = () => {
 	};
 
 	const spectrumChartData = {
-		labels: labels, // Frequency labels for the x-axis
+		labels,
 		datasets: [
 			{
 				label: "Frequency Spectrum",
-				data: spectrumData, // Magnitude values from FFT
-				borderColor: "blue", // Line color
-				backgroundColor: "rgba(75,192,192,0.2)", // Background color
-				fill: false, // Do not fill the area under the curve
+				data: spectrumData,
+				borderColor: "blue",
+				fill: false,
 			},
 		],
 	};
 
 	const filteredSpectrumChartData = {
-		labels: filteredLabels, // Frequency labels for the x-axis
+		labels: filteredLabels,
 		datasets: [
 			{
 				label: "Filtered Frequency Spectrum",
-				data: filteredSpectrumData, // Magnitude values from FFT
-				borderColor: "red", // Line color
-				fill: false, // Do not fill the area under the curve
+				data: filteredSpectrumData,
+				borderColor: "red",
+				fill: false,
 			},
 		],
 	};
@@ -192,7 +231,7 @@ export const RealTimeChart = () => {
 				},
 				beginAtZero: true,
 				min: 0,
-				max: 80
+				max: 80,
 			},
 		},
 	};
@@ -207,7 +246,8 @@ export const RealTimeChart = () => {
 						: "bg-red-500 text-white"
 				}`}
 			>
-				Microphone Websocket {isConnected ? "Connected" : "Disconnected"}
+				Microphone Websocket{" "}
+				{isConnected ? "Connected" : "Disconnected"}
 			</div>
 
 			{/* Input Controls */}
@@ -216,7 +256,7 @@ export const RealTimeChart = () => {
 				<div className="col-span-2 text-center font-semibold">
 					Bandpass Filter
 				</div>
-				
+
 				<div className="flex flex-col items-start">
 					<label
 						htmlFor="bandpass-high"
@@ -231,7 +271,6 @@ export const RealTimeChart = () => {
 						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
 					/>
 				</div>
-
 				<div className="flex flex-col items-start">
 					<label
 						htmlFor="bandpass-low"
