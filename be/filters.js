@@ -1,6 +1,6 @@
 /**
  * Apply a simple low-pass filter to a signal.
- * 
+ *
  * @param {number[]} signal - The input signal.
  * @param {number} cutoff - The cutoff frequency.
  * @param {number} sampleRate - The sample rate of the signal.
@@ -36,7 +36,7 @@ function lowPassFilter(signal, cutoff, sampleRate) {
 
 /**
  * Apply a simple high-pass filter to a signal.
- * 
+ *
  * @param {number[]} signal - The input signal.
  * @param {number} cutoff - The cutoff frequency.
  * @param {number} sampleRate - The sample rate of the signal.
@@ -72,7 +72,7 @@ function highPassFilter(signal, cutoff, sampleRate) {
 
 /**
  * Apply a band-pass filter to a signal.
- * 
+ *
  * @param {number[]} signal - The input signal.
  * @param {number} lowCutoff - The low cutoff frequency.
  * @param {number} highCutoff - The high cutoff frequency.
@@ -89,7 +89,7 @@ function bandPassFilter(signal, lowCutoff, highCutoff, sampleRate) {
 
 /**
  * Apply a band-stop filter to a signal.
- * 
+ *
  * @param {number[]} signal - The input signal.
  * @param {number} lowCutoff - The low cutoff frequency.
  * @param {number} highCutoff - The high cutoff frequency.

@@ -32,10 +32,11 @@ app.get("/", (_, res) => {
 io.on("connection", (socket) => {
 	console.log("GUI connected!");
 
-	socket.on("fft", 
+	socket.on(
+		"fft",
 		/**
 		 * Perform FFT on the incoming data
-		 * 
+		 *
 		 * @param {"normal" | "filtered"} type - The type of FFT data (normal or filtered)
 		 * @param {*} data - The data to perform FFT on
 		 * @param {*} startFreq - Spectrum start frequency
@@ -44,15 +45,17 @@ io.on("connection", (socket) => {
 		 * @emits fft event with the signal spectrum
 		 */
 		(type, data, startFreq, endFreq) => {
-		const resp = CooleyTukeyFFT(data, sampleRate, startFreq, endFreq);
+			const resp = CooleyTukeyFFT(data, sampleRate, startFreq, endFreq);
 
-		socket.emit("fft", type, resp);
-	});
+			socket.emit("fft", type, resp);
+		},
+	);
 
-	socket.on("filter", 
+	socket.on(
+		"filter",
 		/**
 		 * Perform band-pass filter on the incoming signal
-		 * 
+		 *
 		 * @param {number[]} signal - The signal to filter
 		 * @param {number} lowCutoff - Low-pass cutoff frequency
 		 * @param {number} highCutoff - High-pass cutoff frequency
@@ -60,9 +63,15 @@ io.on("connection", (socket) => {
 		 * @emits filter event with the filtered signal
 		 */
 		(signal, lowCutoff, highCutoff) => {
-		const resp = bandPassFilter(signal, lowCutoff, highCutoff, sampleRate);
-		socket.emit("filter", resp);
-	});
+			const resp = bandPassFilter(
+				signal,
+				lowCutoff,
+				highCutoff,
+				sampleRate,
+			);
+			socket.emit("filter", resp);
+		},
+	);
 
 	socket.on("disconnect", () => {
 		console.log("A user disconnected!");

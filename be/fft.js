@@ -1,6 +1,6 @@
 /**
  * Perform the Cooley-Tukey Fast Fourier Transform (FFT) and return magnitudes and frequencies.
- * 
+ *
  * @param {Number[]} signal - The input time-domain signal (real numbers).
  * @param {Number} sampleRate - The sampling rate of the signal in Hz.
  * @param {Number} [startFreq=20] - Spectrum start frequency.
@@ -67,11 +67,12 @@ function CooleyTukeyFFT(signal, sampleRate, startFreq = 20, endFreq = 20000) {
 	);
 
 	// Filter magnitudes and frequencies
-	const filtered = frequencies.map((freq, index) => ({
-		freq,
-		magnitude: magnitudes[index],
-	}))
-	.filter(({ freq }) => freq >= startFreq && freq <= endFreq);
+	const filtered = frequencies
+		.map((freq, index) => ({
+			freq,
+			magnitude: magnitudes[index],
+		}))
+		.filter(({ freq }) => freq >= startFreq && freq <= endFreq);
 
 	return {
 		magnitudes: filtered.map(({ magnitude }) => magnitude),
