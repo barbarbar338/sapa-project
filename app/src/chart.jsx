@@ -41,13 +41,21 @@ export const RealTimeChart = () => {
 	const [debouncedLowPass, setDebouncedLowPass] = useState(lowPass);
 	const [debouncedHighPass, setDebouncedHighPass] = useState(highPass);
 
-	useDebounce(() => {
-		setDebouncedLowPass(lowPass);
-	}, 500, [lowPass]);
+	useDebounce(
+		() => {
+			setDebouncedLowPass(lowPass);
+		},
+		500,
+		[lowPass],
+	);
 
-	useDebounce(() => {
-		setDebouncedHighPass(highPass);
-	}, 500, [highPass]);
+	useDebounce(
+		() => {
+			setDebouncedHighPass(highPass);
+		},
+		500,
+		[highPass],
+	);
 
 	useEffect(() => {
 		// Attach event listeners
@@ -88,11 +96,13 @@ export const RealTimeChart = () => {
 			invoke("apply_filter", {
 				lowPassFreq: debouncedLowPass,
 				highPassFreq: debouncedHighPass,
-				order: 4
+				order: 4,
 			}).then((filterData) => {
 				const newDataPoint = {
 					x: Date.now(),
-					y: filterData.filtered_signal[filterData.filtered_signal.length - 1],
+					y: filterData.filtered_signal[
+						filterData.filtered_signal.length - 1
+					],
 				};
 
 				setFilteredData((prevData) => {
@@ -116,7 +126,14 @@ export const RealTimeChart = () => {
 		return () => {
 			micListener.then((unlisten) => unlisten());
 		};
-	}, [data.datasets, debouncedHighPass, debouncedLowPass, filteredData.datasets, highPass, lowPass]);
+	}, [
+		data.datasets,
+		debouncedHighPass,
+		debouncedLowPass,
+		filteredData.datasets,
+		highPass,
+		lowPass,
+	]);
 
 	const options = {
 		responsive: true,
@@ -201,7 +218,8 @@ export const RealTimeChart = () => {
 			<div className="grid grid-cols-2 gap-4 w-full max-w-md">
 				{/* Bandpass Inputs */}
 				<div className="col-span-2 text-center font-semibold">
-					Bandpass Filter (Current: {debouncedHighPass} - {debouncedLowPass} Hz)
+					Bandpass Filter (Current: {debouncedHighPass} -{" "}
+					{debouncedLowPass} Hz)
 				</div>
 
 				<div className="flex flex-col items-start">
