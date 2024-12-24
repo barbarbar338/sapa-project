@@ -95,7 +95,8 @@ board.on("ready", () => {
 	});
 
 	mic.on("data", (data) => {
-		// Emit microphone data directly to the GUI
-		io.emit("mic", data);
+		// normalize mic data. min = 0V, max = 5V
+		const micData = (data / 1023) * 5;
+		io.emit("mic", micData);
 	});
 });

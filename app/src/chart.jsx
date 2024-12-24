@@ -63,7 +63,7 @@ export const RealTimeChart = () => {
 		const onMic = (micData) => {
 			const newDataPoint = {
 				x: Date.now(),
-				y: (micData / 1023) * 5,
+				y: micData //(micData / 1023) * 5,
 			};
 
 			setData((prevData) => {
@@ -83,7 +83,46 @@ export const RealTimeChart = () => {
 
 			// Emit the filter and FFT events
 			const values = data.datasets[0].data.map((d) => d.y);
-			socket.emit("filter", values, highPass, lowPass);
+			invoke("apply_filter", {
+				signal: values,
+				sample_rate_freq: 44100,
+				high_pass_freq: highPass,
+				low_pass_freq: lowPass,
+				order: 5,
+			}).then((filterData) => {
+				console.log(filterData.filtered_signal)
+				const newDataPoint = {
+					x: Date.now(),
+					y: filterData.filtered_signal[filterData.filtered_signal.length - 1],
+				};
+
+				setFilteredData((prevData) => {
+					const updatedDataset = [
+						...prevData.datasets[0].data,
+						newDataPoint,
+					];
+					return {
+						datasets: [
+							{
+								...prevData.datasets[0],
+								data: updatedDataset, // Update the dataset with new point
+							},
+						],
+					};
+				});
+
+				// Emit the FFT event
+				const values2 = filteredData.datasets[0].data.map((d) => d.y);
+				invoke("apply_fft", {
+					input: values2,
+					sampleRate: 44100,
+					max: spectrumEnd,
+					min: spectrumStart,
+				}).then((spectrum) => {
+					setFilteredSpectrumData(spectrum.magnitudes);
+					setFilteredLabels(spectrum.frequencies);
+				});
+			});
 
 			invoke("apply_fft", {
 				input: values,
@@ -96,60 +135,16 @@ export const RealTimeChart = () => {
 			});
 		};
 
-		/**
-		 * Handle incoming filtered data
-		 *
-		 * @param {Number[]} filterData - The filtered data values
-		 * @returns {void}
-		 * @sideeffect Updates the filtered data state
-		 * @emits fft event with the filtered data
-		 */
-		const onFilter = (filterData) => {
-			const newDataPoint = {
-				x: Date.now(),
-				y: filterData[filterData.length - 1] * 512 + 2.5,
-			};
-
-			setFilteredData((prevData) => {
-				const updatedDataset = [
-					...prevData.datasets[0].data,
-					newDataPoint,
-				];
-				return {
-					datasets: [
-						{
-							...prevData.datasets[0],
-							data: updatedDataset, // Update the dataset with new point
-						},
-					],
-				};
-			});
-
-			// Emit the FFT event
-			const values = filteredData.datasets[0].data.map((d) => d.y);
-			invoke("apply_fft", {
-				input: values,
-				sampleRate: 44100,
-				max: spectrumEnd,
-				min: spectrumStart,
-			}).then((spectrum) => {
-				setFilteredSpectrumData(spectrum.magnitudes);
-				setFilteredLabels(spectrum.frequencies);
-			});
-		};
-
 		// Attach event listeners
 		socket.on("connect", onConnect);
 		socket.on("disconnect", onDisconnect);
 		socket.on("mic", onMic);
-		socket.on("filter", onFilter);
 
 		// Cleanup event listeners
 		return () => {
 			socket.off("connect");
 			socket.off("disconnect");
 			socket.off("mic");
-			socket.off("filter");
 		};
 	}, [
 		data.datasets,
@@ -181,7 +176,7 @@ export const RealTimeChart = () => {
 		},
 		plugins: {
 			streaming: {
-				frameRate: 144,
+				frameRate: 60,
 			},
 		},
 	};
@@ -227,7 +222,7 @@ export const RealTimeChart = () => {
 				},
 				beginAtZero: true,
 				min: 0,
-				max: 80,
+				max: 50,
 			},
 		},
 	};
