@@ -1,6 +1,8 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
+import { useDebounce } from "react-use";
 
 export const RealTimeChart = () => {
 	// Mic data state
@@ -35,16 +37,23 @@ export const RealTimeChart = () => {
 
 	// Filter and spectrum region state
 	const [highPass, setHighPass] = useState(20);
-	const [lowPass, setLowPass] = useState(20000);
-	const [spectrumStart, setSpectrumStart] = useState(20);
-	const [spectrumEnd, setSpectrumEnd] = useState(20000);
+	const [lowPass, setLowPass] = useState(4000);
+	const [debouncedLowPass, setDebouncedLowPass] = useState(lowPass);
+	const [debouncedHighPass, setDebouncedHighPass] = useState(highPass);
+
+	useDebounce(() => {
+		setDebouncedLowPass(lowPass);
+	}, 500, [lowPass]);
+
+	useDebounce(() => {
+		setDebouncedHighPass(highPass);
+	}, 500, [highPass]);
 
 	useEffect(() => {
 		// Attach event listeners
 		const micListener = listen("mic", (event) => {
 			// Parse the mic data and update, already comes as a voltage value between 0V and 5V
 			const micData = event.payload;
-			console.log(micData);
 
 			const newDataPoint = {
 				x: Date.now(),
@@ -65,20 +74,49 @@ export const RealTimeChart = () => {
 					],
 				};
 			});
+
+			// TODO: To much delay, need to fix
+			// Calculate FFT
+			invoke("apply_fft").then((fftData) => {
+				const { frequencies, magnitudes } = fftData;
+				setLabels(frequencies);
+				setSpectrumData(magnitudes);
+			});
+
+			// TODO: To much delay, need to fix
+			// Apply bandpass filter
+			invoke("apply_filter", {
+				lowPassFreq: debouncedLowPass,
+				highPassFreq: debouncedHighPass,
+				order: 4
+			}).then((filterData) => {
+				const newDataPoint = {
+					x: Date.now(),
+					y: filterData.filtered_signal[filterData.filtered_signal.length - 1],
+				};
+
+				setFilteredData((prevData) => {
+					const updatedDataset = [
+						...prevData.datasets[0].data,
+						newDataPoint,
+					];
+					return {
+						datasets: [
+							{
+								...prevData.datasets[0],
+								data: updatedDataset, // Update the dataset with new point
+							},
+						],
+					};
+				});
+			});
 		});
 
 		// Cleanup event listeners
 		return () => {
 			micListener.then((unlisten) => unlisten());
 		};
-	}, [
-		data.datasets,
-		filteredData.datasets,
-		highPass,
-		lowPass,
-		spectrumEnd,
-		spectrumStart,
-	]);
+	}, [data.datasets, debouncedHighPass, debouncedLowPass, filteredData.datasets, highPass, lowPass]);
 
 	const options = {
 		responsive: true,
@@ -95,8 +133,8 @@ export const RealTimeChart = () => {
 			},
 			y: {
 				beginAtZero: true,
-				min: 0,
-				max: +5,
+				/* min: 0,
+				max: +5, */
 			},
 		},
 		plugins: {
@@ -155,9 +193,7 @@ export const RealTimeChart = () => {
 	return (
 		<div className="flex flex-col items-center space-y-6 p-6">
 			{/* WebSocket Connection Indicator */}
-			<div
-				className="text-sm font-bold px-4 py-2 rounded-mdbg-green-500 text-white"
-			>
+			<div className="text-sm font-bold px-4 py-2 rounded-mdbg-green-500 text-white">
 				Microphone Websocket Connected
 			</div>
 
@@ -165,7 +201,7 @@ export const RealTimeChart = () => {
 			<div className="grid grid-cols-2 gap-4 w-full max-w-md">
 				{/* Bandpass Inputs */}
 				<div className="col-span-2 text-center font-semibold">
-					Bandpass Filter
+					Bandpass Filter (Current: {debouncedHighPass} - {debouncedLowPass} Hz)
 				</div>
 
 				<div className="flex flex-col items-start">
@@ -194,43 +230,6 @@ export const RealTimeChart = () => {
 						type="number"
 						value={lowPass}
 						onChange={(e) => setLowPass(Number(e.target.value))}
-						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
-					/>
-				</div>
-
-				{/* Spectrum Region Inputs */}
-				<div className="col-span-2 text-center font-semibold mt-4">
-					Spectrum Region
-				</div>
-				<div className="flex flex-col items-start">
-					<label
-						htmlFor="spectrum-low"
-						className="text-sm font-medium"
-					>
-						Low (Hz)
-					</label>
-					<input
-						id="spectrum-low"
-						type="number"
-						value={spectrumStart}
-						onChange={(e) =>
-							setSpectrumStart(Number(e.target.value))
-						}
-						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
-					/>
-				</div>
-				<div className="flex flex-col items-start">
-					<label
-						htmlFor="spectrum-high"
-						className="text-sm font-medium"
-					>
-						High (Hz)
-					</label>
-					<input
-						id="spectrum-high"
-						type="number"
-						value={spectrumEnd}
-						onChange={(e) => setSpectrumEnd(Number(e.target.value))}
 						className="mt-1 w-full px-2 py-1 border rounded-md focus:ring focus:ring-blue-300"
 					/>
 				</div>

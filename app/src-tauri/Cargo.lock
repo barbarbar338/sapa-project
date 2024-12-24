@@ -982,6 +982,7 @@ version = "0.1.0"
 dependencies = [
  "firmata-rs",
  "iir_filters",
+ "lazy_static",
  "rustfft",
  "serde",
  "serde_json",

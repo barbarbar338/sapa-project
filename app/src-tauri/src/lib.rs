@@ -4,14 +4,17 @@ use serialport::*;
 use std::{thread, time::Duration};
 
 mod dsp;
+mod globals;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            // Rename the window title
             let window = app.get_webview_window("main").unwrap();            
             let _ = window.set_title("Digital Stethoscope");
 
+            // Create a new serial port connection
             let port = serialport::new("COM3", 57_600)
                 .data_bits(DataBits::Eight)
                 .parity(Parity::None)
@@ -21,15 +24,15 @@ pub fn run() {
                 .open()
                 .expect("an opened serial port");
 
+            // Create a new Firmata board and set the pin mode
             let mut b = firmata_rs::Board::new(Box::new(port)).expect("new board");
-
             let pin = 14; // A0
 
             b.set_pin_mode(pin, firmata_rs::ANALOG)
                 .expect("pin mode set");
-
             b.report_analog(pin, 1).expect("reporting state");
 
+            // Spawn a new thread to read and decode the messages
             let app_handle = app.handle().clone();
             thread::spawn(move || {
                 loop {
@@ -38,7 +41,14 @@ pub fn run() {
                     // 10-bit ADC, 5V reference
                     let value = (b.pins[pin as usize].value as f32 / 1023.0) * 5.0;
 
-                    println!("mic: {}", value);
+                    // Hold last 300 samples
+                    let mut audio_data = globals::AUDIO_DATA.lock().unwrap();
+                    audio_data.push(value);
+                    if audio_data.len() > 300 {
+                        audio_data.remove(0);
+                    }
+
+                    // Emit audio data to the frontend
                     app_handle.emit("mic", value).unwrap();
 
                     thread::sleep(Duration::from_micros(128)); // 128us, 8kHz sampling rate

@@ -3,6 +3,7 @@ use serde::Serialize;
 use tauri::command;
 use iir_filters::filter::{DirectForm2Transposed, Filter};
 use iir_filters::filter_design::{FilterType, butter};
+use crate::globals;
 
 #[derive(Serialize)]
 pub struct FilterResult {
@@ -11,20 +12,24 @@ pub struct FilterResult {
 
 #[command]
 pub fn apply_filter(
-    signal: Vec<f64>,
-    sample_rate_freq: Option<f64>,
-    high_pass_freq: Option<f64>,
-    low_pass_freq: Option<f64>,
-    order: Option<u32>,
+    high_pass_freq: f64,
+    low_pass_freq: f64,
+    order: u32,
 ) -> FilterResult {
-    let sample_rate = sample_rate_freq.unwrap_or_else(|| 44100.0);
-    let high_pass = high_pass_freq.unwrap_or_else(|| 20.0);
-    let low_pass = low_pass_freq.unwrap_or_else(|| 20000.0);
-    let filter_order = order.unwrap_or_else(|| 4);
+    let sample_rate = 8100.0;
+    let mut high_pass = high_pass_freq.max(0.0); // Ensure its positive
+    let mut low_pass = low_pass_freq.min((sample_rate / 2.0) - 1.0); // Ensure its less than Nyquist frequency
+    let filter_order = order.max(1); // Ensure its at least 1
+    let signal = globals::AUDIO_DATA.lock().unwrap().clone();
+
+    println!("High-pass: {}, Low-pass: {}, Order: {}", high_pass, low_pass, filter_order);
 
     // Validate frequencies
     if high_pass >= low_pass {
-        panic!("High-pass frequency must be less than low-pass frequency");
+        println!("High-pass frequency must be less than low-pass frequency");
+
+        high_pass = 1.0;
+        low_pass = (sample_rate / 2.0) - 1.0;
     }
 
     // Create Butterworth filter
@@ -48,9 +53,9 @@ pub fn apply_filter(
     let mut filter = DirectForm2Transposed::new(&sos);
 
     // Apply filter to signal
-    let filtered_signal: Vec<f64> = signal
+    let filtered_signal = signal
         .into_iter()
-        .map(|x| filter.filter(x))
+        .map(|x| filter.filter(x.into()))
         .collect();
 
     FilterResult {
