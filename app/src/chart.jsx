@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { socket } from "./socket.js";
@@ -83,7 +84,16 @@ export const RealTimeChart = () => {
 			// Emit the filter and FFT events
 			const values = data.datasets[0].data.map((d) => d.y);
 			socket.emit("filter", values, highPass, lowPass);
-			socket.emit("fft", "normal", values, spectrumStart, spectrumEnd);
+
+			invoke("apply_fft", {
+				input: values,
+				sampleRate: 44100,
+				max: spectrumEnd,
+				min: spectrumStart,
+			}).then((spectrum) => {
+				setSpectrumData(spectrum.magnitudes);
+				setLabels(spectrum.frequencies);
+			});
 		};
 
 		/**
@@ -117,34 +127,21 @@ export const RealTimeChart = () => {
 
 			// Emit the FFT event
 			const values = filteredData.datasets[0].data.map((d) => d.y);
-			socket.emit("fft", "filtered", values, spectrumStart, spectrumEnd);
-		};
-
-		/**
-		 * Handle incoming FFT data
-		 *
-		 * @param {"normal" | "filtered"} type - The type of FFT data (normal or filtered)
-		 * @param {Object} spectrum - The FFT data object
-		 * @returns {void}
-		 * @sideeffect Updates the spectrum data state
-		 * @sideeffect Updates the spectrum labels state
-		 */
-		const onFft = (type, spectrum) => {
-			if (type === "normal") {
-				setSpectrumData(spectrum.magnitudes);
-				setLabels(spectrum.frequencies);
-			}
-			if (type === "filtered") {
+			invoke("apply_fft", {
+				input: values,
+				sampleRate: 44100,
+				max: spectrumEnd,
+				min: spectrumStart,
+			}).then((spectrum) => {
 				setFilteredSpectrumData(spectrum.magnitudes);
 				setFilteredLabels(spectrum.frequencies);
-			}
+			});
 		};
 
 		// Attach event listeners
 		socket.on("connect", onConnect);
 		socket.on("disconnect", onDisconnect);
 		socket.on("mic", onMic);
-		socket.on("fft", onFft);
 		socket.on("filter", onFilter);
 
 		// Cleanup event listeners
@@ -152,7 +149,6 @@ export const RealTimeChart = () => {
 			socket.off("connect");
 			socket.off("disconnect");
 			socket.off("mic");
-			socket.off("fft");
 			socket.off("filter");
 		};
 	}, [
@@ -171,7 +167,7 @@ export const RealTimeChart = () => {
 			x: {
 				type: "realtime",
 				realtime: {
-					duration: 1000 * 5, // save/show last 5 seconds of data
+					duration: 1000 * 10, // save/show last 10 seconds of data
 					refresh: 1000 * 0.0001,
 					delay: 1000 * 0.0001,
 					pause: false,
