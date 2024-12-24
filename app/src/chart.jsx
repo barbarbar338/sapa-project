@@ -1,12 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { socket } from "./socket.js";
 
 export const RealTimeChart = () => {
-	// WebSocket connection state
-	const [isConnected, setIsConnected] = useState(socket.connected);
-
 	// Mic data state
 	const [data, setData] = useState({
 		datasets: [
@@ -44,26 +40,15 @@ export const RealTimeChart = () => {
 	const [spectrumEnd, setSpectrumEnd] = useState(20000);
 
 	useEffect(() => {
-		const onConnect = () => {
-			setIsConnected(true);
-		};
-		const onDisconnect = () => {
-			setIsConnected(false);
-		};
+		// Attach event listeners
+		const micListener = listen("mic", (event) => {
+			// Parse the mic data and update, already comes as a voltage value between 0V and 5V
+			const micData = event.payload;
+			console.log(micData);
 
-		/**
-		 * Handle incoming microphone data
-		 *
-		 * @param {Number} micData - The microphone data value
-		 * @returns {void}
-		 * @sideeffect Updates the mic data state
-		 * @emits filter event with the mic data
-		 * @emits fft event with the mic data
-		 */
-		const onMic = (micData) => {
 			const newDataPoint = {
 				x: Date.now(),
-				y: micData //(micData / 1023) * 5,
+				y: micData,
 			};
 
 			setData((prevData) => {
@@ -80,71 +65,11 @@ export const RealTimeChart = () => {
 					],
 				};
 			});
-
-			// Emit the filter and FFT events
-			const values = data.datasets[0].data.map((d) => d.y);
-			invoke("apply_filter", {
-				signal: values,
-				sample_rate_freq: 44100,
-				high_pass_freq: highPass,
-				low_pass_freq: lowPass,
-				order: 5,
-			}).then((filterData) => {
-				console.log(filterData.filtered_signal)
-				const newDataPoint = {
-					x: Date.now(),
-					y: filterData.filtered_signal[filterData.filtered_signal.length - 1],
-				};
-
-				setFilteredData((prevData) => {
-					const updatedDataset = [
-						...prevData.datasets[0].data,
-						newDataPoint,
-					];
-					return {
-						datasets: [
-							{
-								...prevData.datasets[0],
-								data: updatedDataset, // Update the dataset with new point
-							},
-						],
-					};
-				});
-
-				// Emit the FFT event
-				const values2 = filteredData.datasets[0].data.map((d) => d.y);
-				invoke("apply_fft", {
-					input: values2,
-					sampleRate: 44100,
-					max: spectrumEnd,
-					min: spectrumStart,
-				}).then((spectrum) => {
-					setFilteredSpectrumData(spectrum.magnitudes);
-					setFilteredLabels(spectrum.frequencies);
-				});
-			});
-
-			invoke("apply_fft", {
-				input: values,
-				sampleRate: 44100,
-				max: spectrumEnd,
-				min: spectrumStart,
-			}).then((spectrum) => {
-				setSpectrumData(spectrum.magnitudes);
-				setLabels(spectrum.frequencies);
-			});
-		};
-
-		// Attach event listeners
-		socket.on("connect", onConnect);
-		socket.on("disconnect", onDisconnect);
-		socket.on("mic", onMic);
+		});
 
 		// Cleanup event listeners
 		return () => {
-			socket.off("connect");
-			socket.off("disconnect");
-			socket.off("mic");
+			micListener.then((unlisten) => unlisten());
 		};
 	}, [
 		data.datasets,
@@ -162,7 +87,7 @@ export const RealTimeChart = () => {
 			x: {
 				type: "realtime",
 				realtime: {
-					duration: 1000 * 10, // save/show last 10 seconds of data
+					duration: 1000 * 5, // save/show last 10 seconds of data
 					refresh: 1000 * 0.0001,
 					delay: 1000 * 0.0001,
 					pause: false,
@@ -231,14 +156,9 @@ export const RealTimeChart = () => {
 		<div className="flex flex-col items-center space-y-6 p-6">
 			{/* WebSocket Connection Indicator */}
 			<div
-				className={`text-sm font-bold px-4 py-2 rounded-md ${
-					isConnected
-						? "bg-green-500 text-white"
-						: "bg-red-500 text-white"
-				}`}
+				className="text-sm font-bold px-4 py-2 rounded-mdbg-green-500 text-white"
 			>
-				Microphone Websocket{" "}
-				{isConnected ? "Connected" : "Disconnected"}
+				Microphone Websocket Connected
 			</div>
 
 			{/* Input Controls */}
