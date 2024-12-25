@@ -43,17 +43,34 @@ export const RealTimeChart = () => {
 
 	useDebounce(
 		() => {
-			setDebouncedLowPass(lowPass);
+			console.log("Set lowpass", lowPass, highPass);
+			invoke("set_bandpass", {
+				lowPass: lowPass,
+				highPass: highPass,
+			}).then(([lp, hp]) => {
+				console.log("Set high check", lp, hp);
+
+				setDebouncedHighPass(hp);
+				setDebouncedLowPass(lp);
+			});
 		},
-		500,
+		1000,
 		[lowPass],
 	);
 
 	useDebounce(
 		() => {
-			setDebouncedHighPass(highPass);
+			console.log("Set high", lowPass, highPass);
+			invoke("set_bandpass", {
+				lowPass: lowPass,
+				highPass: highPass,
+			}).then(([lp, hp]) => {
+				console.log("Set high check", lp, hp);
+				setDebouncedHighPass(hp);
+				setDebouncedLowPass(lp);
+			});
 		},
-		500,
+		1000,
 		[highPass],
 	);
 

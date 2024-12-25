@@ -12,17 +12,16 @@ pub struct FilterResult {
 
 #[command]
 pub fn apply_filter(
-    high_pass_freq: f64,
-    low_pass_freq: f64,
     order: u32,
 ) -> FilterResult {
-    let sample_rate = 8100.0;
+    let high_pass_freq = *globals::HIGH_PASS_HZ.lock().unwrap();
+    let low_pass_freq = *globals::LOW_PASS_HZ.lock().unwrap();
+
+    let sample_rate = 8000.0;
     let mut high_pass = high_pass_freq.max(0.0); // Ensure its positive
     let mut low_pass = low_pass_freq.min((sample_rate / 2.0) - 1.0); // Ensure its less than Nyquist frequency
     let filter_order = order.max(1); // Ensure its at least 1
     let signal = globals::AUDIO_DATA.lock().unwrap().clone();
-
-    println!("High-pass: {}, Low-pass: {}, Order: {}", high_pass, low_pass, filter_order);
 
     // Validate frequencies
     if high_pass >= low_pass {

@@ -5,6 +5,7 @@ use std::{thread, time::Duration};
 
 mod dsp;
 mod globals;
+mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -39,7 +40,7 @@ pub fn run() {
                     b.read_and_decode().expect("a message");
 
                     // 10-bit ADC, 5V reference
-                    let value = (b.pins[pin as usize].value as f32 / 1023.0) * 5.0;
+                    let value = (b.pins[pin as usize].value as f32 / 1024.0) * 5.0;
 
                     // Hold last 300 samples
                     let mut audio_data = globals::AUDIO_DATA.lock().unwrap();
@@ -58,7 +59,11 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![dsp::fft::apply_fft, dsp::filter::apply_filter])
+        .invoke_handler(tauri::generate_handler![
+            dsp::fft::apply_fft, 
+            dsp::filter::apply_filter,
+            utils::set_bandpass,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
