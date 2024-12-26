@@ -114,9 +114,35 @@ export const RealTimeChart = () => {
 			});
 		});
 
+		const filteredMicListener = listen("filtered_mic", (event) => {
+			// Parse the mic data and update, already comes as a voltage value between 0V and 5V
+			const micData = event.payload;
+
+			const newDataPoint = {
+				x: Date.now(),
+				y: micData,
+			};
+
+			setFilteredData((prevData) => {
+				const updatedDataset = [
+					...prevData.datasets[0].data,
+					newDataPoint,
+				];
+				return {
+					datasets: [
+						{
+							...prevData.datasets[0],
+							data: updatedDataset, // Update the dataset with new point
+						},
+					],
+				};
+			});
+		});
+
 		// Cleanup event listeners
 		return () => {
 			micListener.then((unlisten) => unlisten());
+			filteredMicListener.then((unlisten) => unlisten());
 		};
 	}, [
 		data.datasets,

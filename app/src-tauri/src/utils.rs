@@ -31,11 +31,6 @@ pub fn apply_fft(signal: Vec<f64>) -> crate::fft::FFTResult {
     crate::fft::apply_fft(signal)
 }
 
-#[command]
-pub fn apply_filter(signal: Vec<f64>) -> crate::filter::FilterResult {
-    crate::filter::apply_filter(signal)
-}
-
 pub fn round(input: f64, places: Option<i32>) -> f64 {
     // Default to 2 decimal places
     let places = places.unwrap_or(2);
