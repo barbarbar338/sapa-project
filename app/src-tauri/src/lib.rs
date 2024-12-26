@@ -4,6 +4,7 @@ use serialport::{self, DataBits, FlowControl, Parity, StopBits};
 use std::{thread, time::Duration};
 use biquad::{Biquad, Coefficients, DirectForm1, ToHertz, Type};
 
+mod bpm;
 mod fft;
 mod globals;
 mod utils;
@@ -53,10 +54,6 @@ pub fn run() {
                 low_pass = nyquist - 1.0;
             }
 
-
-            // Create band-pass filter coefficients
-
-
             // Create high-pass filter coefficients
             let highpass_coeffs = Coefficients::<f64>::from_params(
                 Type::HighPass,
@@ -103,13 +100,13 @@ pub fn run() {
                 }
             });
 
-
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             utils::set_bandpass,
-            utils::apply_fft
+            utils::apply_fft,
+            utils::bpm,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

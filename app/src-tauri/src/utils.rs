@@ -31,6 +31,11 @@ pub fn apply_fft(signal: Vec<f64>) -> crate::fft::FFTResult {
     crate::fft::apply_fft(signal)
 }
 
+#[command]
+pub fn bpm(signal: Vec<f64>) -> f64 {
+    crate::bpm::bpm(signal)
+}
+
 pub fn round(input: f64, places: Option<i32>) -> f64 {
     // Default to 2 decimal places
     let places = places.unwrap_or(2);

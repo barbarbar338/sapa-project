@@ -45,6 +45,9 @@ export const RealTimeChart = () => {
 	const [debouncedLowPass, setDebouncedLowPass] = useState(lowPass);
 	const [debouncedHighPass, setDebouncedHighPass] = useState(highPass);
 
+	// BPM state
+	const [bpm, setBpm] = useState(0);
+
 	useDebounce(
 		() => {
 			invoke("set_bandpass", {
@@ -289,6 +292,17 @@ export const RealTimeChart = () => {
 		},
 	};
 
+	const calculateBPM = () => {
+		console.log("Calculating BPM");
+		const values = filteredData.datasets[0].data.map((point) => point.y);
+		invoke("bpm", {
+			signal: values
+		}).then((bpm) => {
+			console.log(bpm)
+			setBpm(bpm);
+		});
+	};
+
 	return (
 		<div className="flex flex-col items-center space-y-6 p-6">
 			{/* WebSocket Connection Indicator */}
@@ -301,8 +315,12 @@ export const RealTimeChart = () => {
 				{/* Bandpass Inputs */}
 				<div className="col-span-2 text-center font-semibold">
 					Bandpass Filter (Current: {debouncedHighPass} -{" "}
-					{debouncedLowPass} Hz)
+					{debouncedLowPass} Hz) - BPM: {bpm}
 				</div>
+
+				<button className="col-span-2 bg-blue-500 text-white font-semibold py-2 rounded-md hover:bg-blue-600" onClick={calculateBPM}>
+					Calculate BPM
+				</button>
 
 				<div className="flex flex-col items-start">
 					<label
