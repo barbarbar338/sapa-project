@@ -111,7 +111,8 @@ export const RealTimeChart = () => {
 				setLabels(frequencies);
 
 				// Update the FFT label max
-				setLabelMax(Math.max(...magnitudes, 8) + 2);
+				let max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
+				setLabelMax(max + 5);
 			});
 		});
 
@@ -151,7 +152,8 @@ export const RealTimeChart = () => {
 				setFilteredLabels(frequencies);
 
 				// Update the filtered FFT label max
-				setFilteredLabelMax(Math.max(...magnitudes, 8) + 2);
+				let max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
+				setFilteredLabelMax(max + 5);
 			});
 		});
 
