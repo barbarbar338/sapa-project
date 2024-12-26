@@ -18,8 +18,11 @@ pub fn apply_filter() -> FilterResult {
 
     let mut high_pass = high_pass_freq.max(1.0); // Ensure its positive
     let mut low_pass = low_pass_freq.min(nyquist); // Ensure its less than Nyquist frequency
-    let filter_order = 4; //order.max(1); // Ensure its at least 1
+    let filter_order = 2; //order.max(1); // Ensure its at least 1
     let signal = globals::AUDIO_DATA.lock().unwrap().clone();
+
+    // Zero-center the signal
+    let zero_centered_signal: Vec<f64> = signal.iter().map(|x| x - 2.5).collect();
 
     // Validate frequencies
     if high_pass >= low_pass {
@@ -50,14 +53,14 @@ pub fn apply_filter() -> FilterResult {
     let mut filter = DirectForm2Transposed::new(&sos);
 
     // Apply filter to signal
-    let filtered_signal: Vec<f64> = signal
+    let filtered_signal: Vec<f64> = zero_centered_signal
         .into_iter()
         .map(|x| filter.filter(x.into()))
         .collect();
 
     // Save filtered signal
     let mut filtered_data = globals::FILTERED_DATA.lock().unwrap();
-    *filtered_data = filtered_signal.iter().map(|&x| x as f32).collect();
+    *filtered_data = filtered_signal.clone();
 
     FilterResult {
         filtered_signal,
