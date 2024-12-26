@@ -37,6 +37,7 @@ export const RealTimeChart = () => {
 
 	// FFT Label Max
 	const [labelMax, setLabelMax] = useState(10);
+	const [filteredLabelMax, setFilteredLabelMax] = useState(10);
 
 	// Filter and spectrum region state
 	const [highPass, setHighPass] = useState(20);
@@ -110,7 +111,7 @@ export const RealTimeChart = () => {
 				setLabels(frequencies);
 
 				// Update the FFT label max
-				setLabelMax(Math.max(...[...magnitudes, 8]) + 2);
+				setLabelMax(Math.max(...magnitudes, 8) + 2);
 			});
 		});
 
@@ -136,6 +137,21 @@ export const RealTimeChart = () => {
 						},
 					],
 				};
+			});
+
+			// Apply FFT to the mic data
+			const values = data.datasets[0].data.map((point) => point.y);
+			invoke("apply_fft", {
+				signal: values
+			}).then((fftData) => {
+				const { frequencies, magnitudes } = fftData;
+
+				// Update the filtered FFT data
+				setFilteredSpectrumData(magnitudes);
+				setFilteredLabels(frequencies);
+
+				// Update the filtered FFT label max
+				setFilteredLabelMax(Math.max(...magnitudes, 8) + 2);
 			});
 		});
 
@@ -193,9 +209,9 @@ export const RealTimeChart = () => {
 				},
 			},
 			y: {
-				/* beginAtZero: true,
+				beginAtZero: true,
 				min: 0,
-				max: +5, */
+				max: +5,
 			},
 		},
 		plugins: {
@@ -266,7 +282,7 @@ export const RealTimeChart = () => {
 					display: true,
 					text: "Magnitude",
 				},
-				//max: labelMax,
+				max: filteredLabelMax,
 			},
 		},
 	};

@@ -2,7 +2,7 @@ use tauri::Emitter;
 use firmata_rs::{self, Firmata};
 use serialport::{self, DataBits, FlowControl, Parity, StopBits};
 use std::{thread, time::Duration};
-use iir_filters::{filter::{DirectForm2Transposed, Filter}, filter_design::{self, FilterType}, sos::zpk2sos};
+use biquad::{Biquad, Coefficients, DirectForm1, ToHertz, Type};
 
 mod fft;
 mod globals;
@@ -36,7 +36,7 @@ pub fn run() {
                 .expect("pin mode set");
             b.report_analog(pin, 1).expect("reporting state");
 
-            // Design bandpass filter
+             // Design bandpass filter
             let high_pass_freq = *globals::HIGH_PASS_HZ.lock().unwrap();
             let low_pass_freq = *globals::LOW_PASS_HZ.lock().unwrap();
 
@@ -44,7 +44,6 @@ pub fn run() {
 
             let mut high_pass = high_pass_freq.max(1.0); // Ensure its positive
             let mut low_pass = low_pass_freq.min(nyquist - 1.0); // Ensure its less than Nyquist frequency
-            let filter_order = 2;
 
             // Validate frequencies
             if high_pass >= low_pass {
@@ -54,38 +53,29 @@ pub fn run() {
                 low_pass = nyquist - 1.0;
             }
 
-            let zpk = match filter_design::butter(
-                    filter_order,
-                    FilterType::BandPass(low_pass, high_pass),
-                    sample_rate
-                ) {
-                Ok(zpk) => zpk,
-                Err(e) => panic!("Failed to design filter: {}", e),
-            };
 
-            let sos = match zpk2sos(&zpk, None) {
-                Ok(sos) => sos,
-                Err(e) => panic!("Failed to convert ZPK to SOS: {}", e),
-            };
+            // Create band-pass filter coefficients
 
-            let mut filter = DirectForm2Transposed::new(&sos);
 
-            // Design DC blocker, high-pass filter with very low cutoff
-            let dc_zpk = match filter_design::butter(
-                1, 
-                FilterType::HighPass(5.0),
-                sample_rate
-            ) {
-                Ok(dc_zpk) => dc_zpk,
-                Err(e) => panic!("Failed to design DC filter: {}", e),
-            };
+            // Create high-pass filter coefficients
+            let highpass_coeffs = Coefficients::<f64>::from_params(
+                Type::HighPass,
+                sample_rate.hz(),
+                high_pass.hz(),
+                2.0
+            ).expect("valid high-pass filter coefficients");
 
-            let dc_sos = match zpk2sos(&dc_zpk, None) {
-                Ok(dc_sos) => dc_sos,
-                Err(e) => panic!("Failed to convert DC ZPK to SOS: {}", e),
-            };
+            // Create low-pass filter coefficients (4000 Hz)
+            let lowpass_coeffs = Coefficients::<f64>::from_params(
+                Type::LowPass,
+                sample_rate.hz(),
+                low_pass.hz(),
+                1.0, // Q-Factor (default to 1.0)
+            ).expect("valid low-pass filter coefficients");
 
-            let mut dc_filter = DirectForm2Transposed::new(&dc_sos);
+            // Create Biquad filter instances
+            let mut highpass_filter = DirectForm1::new(highpass_coeffs);
+            let mut lowpass_filter = DirectForm1::new(lowpass_coeffs);
 
             // Spawn an asyncronous thread to read and
             // decode the messages from the board every
@@ -102,13 +92,10 @@ pub fn run() {
                     // Emit audio data to the frontend
                     app_handle.emit("mic", value).unwrap();
 
-                    // Apply DC blocker filter FIRST!
-                    let dc_blocked_value = dc_filter.filter(value);
-
                     // Apply filter to the audio signal and emit
-                    let filtered_value = filter.filter(dc_blocked_value);
-                    
-                    app_handle.emit("filtered_mic", filtered_value).unwrap();
+                    let highpass_value = highpass_filter.run(value - 2.5);
+                    let filtered_value = lowpass_filter.run(highpass_value);
+                    app_handle.emit("filtered_mic", filtered_value + 2.5).unwrap();
 
                     // Sleep for 125 microseconds, 8kHz sample rate
                     let period = 1.0 / sample_rate; // 1 / 8000 = 0.000125 = 125microseconds
