@@ -9,17 +9,16 @@ pub struct FilterResult {
     pub filtered_signal: Vec<f64>,
 }
 
-pub fn apply_filter() -> FilterResult {
+pub fn apply_filter(signal: Vec<f64>) -> FilterResult {
     let high_pass_freq = *globals::HIGH_PASS_HZ.lock().unwrap();
     let low_pass_freq = *globals::LOW_PASS_HZ.lock().unwrap();
     let sample_rate = *globals::SAMPLE_RATE;
 
-    let nyquist = (sample_rate / 2.0) - 1.0;
+    let nyquist = sample_rate / 2.0;
 
     let mut high_pass = high_pass_freq.max(1.0); // Ensure its positive
-    let mut low_pass = low_pass_freq.min(nyquist); // Ensure its less than Nyquist frequency
+    let mut low_pass = low_pass_freq.min(nyquist - 1.0); // Ensure its less than Nyquist frequency
     let filter_order = 2; //order.max(1); // Ensure its at least 1
-    let signal = globals::AUDIO_DATA.lock().unwrap().clone();
 
     // Zero-center the signal
     let zero_centered_signal: Vec<f64> = signal.iter().map(|x| x - 2.5).collect();
@@ -29,13 +28,16 @@ pub fn apply_filter() -> FilterResult {
         println!("High-pass frequency must be less than low-pass frequency");
 
         high_pass = 1.0;
-        low_pass = nyquist;
+        low_pass = nyquist - 1.0;
     }
 
     // Create Butterworth filter
     let zpk = butter(
         filter_order,
-        FilterType::BandPass(low_pass, high_pass),
+        FilterType::BandPass(
+            low_pass / nyquist, 
+            high_pass / nyquist
+        ),
         sample_rate,
     )
     .map_err(|e| format!("Failed to design filter: {}", e));
@@ -57,10 +59,6 @@ pub fn apply_filter() -> FilterResult {
         .into_iter()
         .map(|x| filter.filter(x.into()))
         .collect();
-
-    // Save filtered signal
-    let mut filtered_data = globals::FILTERED_DATA.lock().unwrap();
-    *filtered_data = filtered_signal.clone();
 
     FilterResult {
         filtered_signal,

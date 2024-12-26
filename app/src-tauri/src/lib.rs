@@ -41,39 +41,18 @@ pub fn run() {
             // of the audio signal, 8kHz
             let app_handle = app.handle().clone();
             thread::spawn(move || {
+                let sample_rate = *globals::SAMPLE_RATE;
                 loop {
                     b.read_and_decode().expect("a message");
 
                     // 10-bit ADC, 5V reference
                     let value = (b.pins[pin as usize].value as f64 / 1024.0) * 5.0;
 
-                    // Hold last 300 samples
-                    let mut audio_data = globals::AUDIO_DATA.lock().unwrap();
-                    audio_data.push(value);
-                    if audio_data.len() > 300 {
-                        audio_data.remove(0);
-                    }
-                    drop(audio_data); // Unlock the mutex
-                    
                     // Emit audio data to the frontend
                     app_handle.emit("mic", value).unwrap();
 
-                    // Apply FFT
-                    let fft_result = fft::apply_fft(true);
-                    app_handle.emit("fft-normal", fft_result).unwrap();
-
-                    // TODO: Too much delay???
-                    // Apply bandpass filter
-                    let filter_result = filter::apply_filter();
-                    let filtered_signal = filter_result.filtered_signal.last().unwrap(); // get the latest filtered signal element
-                    app_handle.emit("filtered-signal", *filtered_signal).unwrap();
-
-                    // Apply FFT to filtered signal
-                    let fft_result = fft::apply_fft(false);
-                    app_handle.emit("fft-filtered", fft_result).unwrap();
-
                     // Sleep for 125 microseconds, 8kHz sample rate
-                    let period = 1.0 / *globals::SAMPLE_RATE; // 1 / 8000 = 0.000125 = 125microseconds
+                    let period = 1.0 / sample_rate; // 1 / 8000 = 0.000125 = 125microseconds
                     thread::sleep(Duration::from_secs_f64(period));
                 }
             });
@@ -84,6 +63,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             utils::set_bandpass,
+            utils::apply_fft,
+            utils::apply_filter
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

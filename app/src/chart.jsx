@@ -35,6 +35,9 @@ export const RealTimeChart = () => {
 	const [labels, setLabels] = useState([]);
 	const [filteredLabels, setFilteredLabels] = useState([]);
 
+	// FFT Label Max
+	const [labelMax, setLabelMax] = useState(10);
+
 	// Filter and spectrum region state
 	const [highPass, setHighPass] = useState(20);
 	const [lowPass, setLowPass] = useState(3999);
@@ -94,52 +97,26 @@ export const RealTimeChart = () => {
 					],
 				};
 			});
-		});
 
-		const normalFftListener = listen("fft-normal", (event) => {
-			const { frequencies, magnitudes } = event.payload;
+			// Apply FFT to the mic data
+			const values = data.datasets[0].data.map((point) => point.y);
+			invoke("apply_fft", {
+				signal: values
+			}).then((fftData) => {
+				const { frequencies, magnitudes } = fftData;
 
-			setLabels(frequencies);
-			setSpectrumData(magnitudes);
-		});
+				// Update the FFT data
+				setSpectrumData(magnitudes);
+				setLabels(frequencies);
 
-		const filteredFftListener = listen("fft-filtered", (event) => {
-			const { frequencies, magnitudes } = event.payload;
-
-			setFilteredLabels(frequencies);
-			setFilteredSpectrumData(magnitudes);
-		});
-
-		const filterListener = listen("filtered-signal", (event) => {
-			const filteredData = event.payload;
-
-			const newDataPoint = {
-				x: Date.now(),
-				y: filteredData,
-			};
-
-			setFilteredData((prevData) => {
-				const updatedDataset = [
-					...prevData.datasets[0].data,
-					newDataPoint,
-				];
-				return {
-					datasets: [
-						{
-							...prevData.datasets[0],
-							data: updatedDataset, // Update the dataset with new point
-						},
-					],
-				};
+				// Update the FFT label max
+				setLabelMax(Math.max(...[...magnitudes, 8]) + 2);
 			});
 		});
 
 		// Cleanup event listeners
 		return () => {
 			micListener.then((unlisten) => unlisten());
-			normalFftListener.then((unlisten) => unlisten());
-			filteredFftListener.then((unlisten) => unlisten());
-			filterListener.then((unlisten) => unlisten());
 		};
 	}, [
 		data.datasets,
@@ -150,7 +127,7 @@ export const RealTimeChart = () => {
 		lowPass,
 	]);
 
-	const options = {
+	const micChartOptions = {
 		responsive: true,
 		animation: false,
 		scales: {
@@ -164,8 +141,34 @@ export const RealTimeChart = () => {
 				},
 			},
 			y: {
-				//beginAtZero: true,
-				/* min: 0,
+				beginAtZero: true,
+				min: 0,
+				max: +5,
+			},
+		},
+		plugins: {
+			streaming: {
+				frameRate: 60,
+			},
+		},
+	};
+
+	const filteredChartOptions = {
+		responsive: true,
+		animation: false,
+		scales: {
+			x: {
+				type: "realtime",
+				realtime: {
+					duration: 1000 * 5, // save/show last 10 seconds of data
+					refresh: 1000 * 0.0001,
+					delay: 1000 * 0.0001,
+					pause: false,
+				},
+			},
+			y: {
+				/* beginAtZero: true,
+				min: 0,
 				max: +5, */
 			},
 		},
@@ -209,15 +212,35 @@ export const RealTimeChart = () => {
 					display: true,
 					text: "Frequency (Hz)",
 				},
+				beginAtZero: true,
 			},
 			y: {
 				title: {
 					display: true,
 					text: "Magnitude",
 				},
+				max: labelMax,
+			},
+		},
+	};
+
+	const filteredSpectrumChartOptions = {
+		responsive: true,
+		animation: false,
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: "Frequency (Hz)",
+				},
 				beginAtZero: true,
-				/* min: 0,
-				max: 50, */
+			},
+			y: {
+				title: {
+					display: true,
+					text: "Magnitude",
+				},
+				//max: labelMax,
 			},
 		},
 	};
@@ -274,7 +297,7 @@ export const RealTimeChart = () => {
 					<Line
 						className="h-full w-full"
 						data={data}
-						options={options}
+						options={micChartOptions}
 						height={512}
 						width={512}
 					/>
@@ -283,7 +306,7 @@ export const RealTimeChart = () => {
 					<Line
 						className="h-full w-full"
 						data={filteredData}
-						options={options}
+						options={filteredChartOptions}
 						height={512}
 						width={512}
 					/>
@@ -301,7 +324,7 @@ export const RealTimeChart = () => {
 					<Line
 						className="h-full w-full"
 						data={filteredSpectrumChartData}
-						options={spectrumChartOptions}
+						options={filteredSpectrumChartOptions}
 						height={512}
 						width={512}
 					/>
