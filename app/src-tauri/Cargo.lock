@@ -771,6 +771,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "digital-stethoscope"
+version = "0.1.0"
+dependencies = [
+ "firmata-rs",
+ "iir_filters",
+ "lazy_static",
+ "rustfft",
+ "serde",
+ "serde_json",
+ "serialport",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+]
+
+[[package]]
 name = "dirs"
 version = "5.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -974,22 +990,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c"
 dependencies = [
  "simd-adler32",
-]
-
-[[package]]
-name = "fe-tauri"
-version = "0.1.0"
-dependencies = [
- "firmata-rs",
- "iir_filters",
- "lazy_static",
- "rustfft",
- "serde",
- "serde_json",
- "serialport",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
 ]
 
 [[package]]

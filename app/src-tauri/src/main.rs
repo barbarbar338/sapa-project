@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    fe_tauri_lib::run()
+    digital_stethoscope_lib::run()
 }

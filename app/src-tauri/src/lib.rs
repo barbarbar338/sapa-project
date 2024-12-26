@@ -1,9 +1,10 @@
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use firmata_rs::*;
 use serialport::*;
 use std::{thread, time::Duration};
 
-mod dsp;
+mod fft;
+mod filter;
 mod globals;
 mod utils;
 
@@ -11,12 +12,13 @@ mod utils;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            // Rename the window title
-            let window = app.get_webview_window("main").unwrap();            
-            let _ = window.set_title("Digital Stethoscope");
+            // Arduino board constants
+            let pin = 14; // A0
+            let path = "COM3";
+            let baud_rate = 57_600;
 
             // Create a new serial port connection
-            let port = serialport::new("COM3", 57_600)
+            let port = serialport::new(path, baud_rate)
                 .data_bits(DataBits::Eight)
                 .parity(Parity::None)
                 .stop_bits(StopBits::One)
@@ -27,13 +29,16 @@ pub fn run() {
 
             // Create a new Firmata board and set the pin mode
             let mut b = firmata_rs::Board::new(Box::new(port)).expect("new board");
-            let pin = 14; // A0
-
+            
+            // Set the pin mode
             b.set_pin_mode(pin, firmata_rs::ANALOG)
                 .expect("pin mode set");
             b.report_analog(pin, 1).expect("reporting state");
 
-            // Spawn a new thread to read and decode the messages
+            // Spawn an asyncronous thread to read and
+            // decode the messages from the board every
+            // 125 microseconds, which is the sample rate
+            // of the audio signal, 8kHz
             let app_handle = app.handle().clone();
             thread::spawn(move || {
                 loop {
@@ -48,20 +53,36 @@ pub fn run() {
                     if audio_data.len() > 300 {
                         audio_data.remove(0);
                     }
-
+                    drop(audio_data); // Unlock the mutex
+                    
                     // Emit audio data to the frontend
                     app_handle.emit("mic", value).unwrap();
 
-                    thread::sleep(Duration::from_micros(128)); // 128us, 8kHz sampling rate
+                    // Apply FFT
+                    let fft_result = fft::apply_fft(true);
+                    app_handle.emit("fft-normal", fft_result).unwrap();
+
+                    // TODO: Too much delay???
+                    // Apply bandpass filter
+                    let filter_result = filter::apply_filter();
+                    let filtered_signal = filter_result.filtered_signal.last().unwrap(); // get the latest filtered signal element
+                    app_handle.emit("filtered-signal", *filtered_signal).unwrap();
+
+                    // Apply FFT to filtered signal
+                    let fft_result = fft::apply_fft(false);
+                    app_handle.emit("fft-filtered", fft_result).unwrap();
+
+                    // Sleep for 125 microseconds, 8kHz sample rate
+                    let period = 1.0 / *globals::SAMPLE_RATE; // 1 / 8000 = 0.000125 = 125microseconds
+                    thread::sleep(Duration::from_secs_f64(period));
                 }
             });
+
 
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            dsp::fft::apply_fft, 
-            dsp::filter::apply_filter,
             utils::set_bandpass,
         ])
         .run(tauri::generate_context!())

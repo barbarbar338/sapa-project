@@ -1,26 +1,24 @@
 use iir_filters::sos::zpk2sos;
 use serde::Serialize;
-use tauri::command;
 use iir_filters::filter::{DirectForm2Transposed, Filter};
 use iir_filters::filter_design::{FilterType, butter};
 use crate::globals;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct FilterResult {
-    filtered_signal: Vec<f64>,
+    pub filtered_signal: Vec<f64>,
 }
 
-#[command]
-pub fn apply_filter(
-    order: u32,
-) -> FilterResult {
+pub fn apply_filter() -> FilterResult {
     let high_pass_freq = *globals::HIGH_PASS_HZ.lock().unwrap();
     let low_pass_freq = *globals::LOW_PASS_HZ.lock().unwrap();
+    let sample_rate = *globals::SAMPLE_RATE;
 
-    let sample_rate = 8000.0;
-    let mut high_pass = high_pass_freq.max(0.0); // Ensure its positive
-    let mut low_pass = low_pass_freq.min((sample_rate / 2.0) - 1.0); // Ensure its less than Nyquist frequency
-    let filter_order = order.max(1); // Ensure its at least 1
+    let nyquist = (sample_rate / 2.0) - 1.0;
+
+    let mut high_pass = high_pass_freq.max(1.0); // Ensure its positive
+    let mut low_pass = low_pass_freq.min(nyquist); // Ensure its less than Nyquist frequency
+    let filter_order = 4; //order.max(1); // Ensure its at least 1
     let signal = globals::AUDIO_DATA.lock().unwrap().clone();
 
     // Validate frequencies
@@ -28,7 +26,7 @@ pub fn apply_filter(
         println!("High-pass frequency must be less than low-pass frequency");
 
         high_pass = 1.0;
-        low_pass = (sample_rate / 2.0) - 1.0;
+        low_pass = nyquist;
     }
 
     // Create Butterworth filter
@@ -52,10 +50,14 @@ pub fn apply_filter(
     let mut filter = DirectForm2Transposed::new(&sos);
 
     // Apply filter to signal
-    let filtered_signal = signal
+    let filtered_signal: Vec<f64> = signal
         .into_iter()
         .map(|x| filter.filter(x.into()))
         .collect();
+
+    // Save filtered signal
+    let mut filtered_data = globals::FILTERED_DATA.lock().unwrap();
+    *filtered_data = filtered_signal.iter().map(|&x| x as f32).collect();
 
     FilterResult {
         filtered_signal,

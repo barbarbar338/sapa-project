@@ -37,19 +37,16 @@ export const RealTimeChart = () => {
 
 	// Filter and spectrum region state
 	const [highPass, setHighPass] = useState(20);
-	const [lowPass, setLowPass] = useState(4000);
+	const [lowPass, setLowPass] = useState(3999);
 	const [debouncedLowPass, setDebouncedLowPass] = useState(lowPass);
 	const [debouncedHighPass, setDebouncedHighPass] = useState(highPass);
 
 	useDebounce(
 		() => {
-			console.log("Set lowpass", lowPass, highPass);
 			invoke("set_bandpass", {
 				lowPass: lowPass,
 				highPass: highPass,
 			}).then(([lp, hp]) => {
-				console.log("Set high check", lp, hp);
-
 				setDebouncedHighPass(hp);
 				setDebouncedLowPass(lp);
 			});
@@ -60,12 +57,10 @@ export const RealTimeChart = () => {
 
 	useDebounce(
 		() => {
-			console.log("Set high", lowPass, highPass);
 			invoke("set_bandpass", {
 				lowPass: lowPass,
 				highPass: highPass,
 			}).then(([lp, hp]) => {
-				console.log("Set high check", lp, hp);
 				setDebouncedHighPass(hp);
 				setDebouncedLowPass(lp);
 			});
@@ -99,49 +94,52 @@ export const RealTimeChart = () => {
 					],
 				};
 			});
+		});
 
-			// TODO: To much delay, need to fix
-			// Calculate FFT
-			invoke("apply_fft").then((fftData) => {
-				const { frequencies, magnitudes } = fftData;
-				setLabels(frequencies);
-				setSpectrumData(magnitudes);
-			});
+		const normalFftListener = listen("fft-normal", (event) => {
+			const { frequencies, magnitudes } = event.payload;
 
-			// TODO: To much delay, need to fix
-			// Apply bandpass filter
-			invoke("apply_filter", {
-				lowPassFreq: debouncedLowPass,
-				highPassFreq: debouncedHighPass,
-				order: 4,
-			}).then((filterData) => {
-				const newDataPoint = {
-					x: Date.now(),
-					y: filterData.filtered_signal[
-						filterData.filtered_signal.length - 1
+			setLabels(frequencies);
+			setSpectrumData(magnitudes);
+		});
+
+		const filteredFftListener = listen("fft-filtered", (event) => {
+			const { frequencies, magnitudes } = event.payload;
+
+			setFilteredLabels(frequencies);
+			setFilteredSpectrumData(magnitudes);
+		});
+
+		const filterListener = listen("filtered-signal", (event) => {
+			const filteredData = event.payload;
+
+			const newDataPoint = {
+				x: Date.now(),
+				y: filteredData,
+			};
+
+			setFilteredData((prevData) => {
+				const updatedDataset = [
+					...prevData.datasets[0].data,
+					newDataPoint,
+				];
+				return {
+					datasets: [
+						{
+							...prevData.datasets[0],
+							data: updatedDataset, // Update the dataset with new point
+						},
 					],
 				};
-
-				setFilteredData((prevData) => {
-					const updatedDataset = [
-						...prevData.datasets[0].data,
-						newDataPoint,
-					];
-					return {
-						datasets: [
-							{
-								...prevData.datasets[0],
-								data: updatedDataset, // Update the dataset with new point
-							},
-						],
-					};
-				});
 			});
 		});
 
 		// Cleanup event listeners
 		return () => {
 			micListener.then((unlisten) => unlisten());
+			normalFftListener.then((unlisten) => unlisten());
+			filteredFftListener.then((unlisten) => unlisten());
+			filterListener.then((unlisten) => unlisten());
 		};
 	}, [
 		data.datasets,
@@ -218,8 +216,8 @@ export const RealTimeChart = () => {
 					text: "Magnitude",
 				},
 				beginAtZero: true,
-				min: 0,
-				max: 50,
+				/* min: 0,
+				max: 50, */
 			},
 		},
 	};
