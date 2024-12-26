@@ -45,7 +45,7 @@ pub fn run() {
                     b.read_and_decode().expect("a message");
 
                     // 10-bit ADC, 5V reference
-                    let value = (b.pins[pin as usize].value as f32 / 1024.0) * 5.0;
+                    let value = (b.pins[pin as usize].value as f64 / 1024.0) * 5.0;
 
                     // Hold last 300 samples
                     let mut audio_data = globals::AUDIO_DATA.lock().unwrap();
