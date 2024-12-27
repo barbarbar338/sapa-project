@@ -78,6 +78,42 @@ export const RealTimeChart = () => {
 		[highPass],
 	);
 
+	// Effect for applying FFT to the mic data
+	useEffect(() => {
+		const values = micData.map((point) => point.y);
+		invoke("apply_fft", {
+			signal: values,
+		}).then((fftData) => {
+			const { frequencies, magnitudes } = fftData;
+
+			// Update the FFT data
+			setSpectrumData(magnitudes);
+			setLabels(frequencies);
+
+			// Update the FFT label max
+			const max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
+			setLabelMax(max + 5);
+		});
+	}, [micData, setLabelMax, setLabels, setSpectrumData]);
+
+	// Effect for applying FFT to the filtered mic data
+	useEffect(() => {
+		const values = filteredMicData.map((point) => point.y);
+		invoke("apply_fft", {
+			signal: values,
+		}).then((fftData) => {
+			const { frequencies, magnitudes } = fftData;
+
+			// Update the filtered FFT data
+			setFilteredSpectrumData(magnitudes);
+			setFilteredLabels(frequencies);
+
+			// Update the filtered FFT label max
+			const max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
+			setFilteredLabelMax(max + 5);
+		});
+	}, [filteredMicData, setFilteredLabelMax, setFilteredLabels, setFilteredSpectrumData]);
+
 	useEffect(() => {
 		// Attach event listeners
 		const micListener = listen("mic", (event) => {
@@ -92,22 +128,6 @@ export const RealTimeChart = () => {
 			setMicData((prevData) => {
 				const updatedSignal = [...prevData, newDataPoint];
 				return updatedSignal;
-			});
-
-			// Apply FFT to the mic data
-			const values = micData.map((point) => point.y);
-			invoke("apply_fft", {
-				signal: values,
-			}).then((fftData) => {
-				const { frequencies, magnitudes } = fftData;
-
-				// Update the FFT data
-				setSpectrumData(magnitudes);
-				setLabels(frequencies);
-
-				// Update the FFT label max
-				const max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
-				setLabelMax(max + 5);
 			});
 		});
 
@@ -124,22 +144,6 @@ export const RealTimeChart = () => {
 				const updatedSignal = [...prevData, newDataPoint];
 				return updatedSignal;
 			});
-
-			// Apply FFT to the filtered data
-			const values = filteredMicData.map((point) => point.y);
-			invoke("apply_fft", {
-				signal: values,
-			}).then((fftData) => {
-				const { frequencies, magnitudes } = fftData;
-
-				// Update the filtered FFT data
-				setFilteredSpectrumData(magnitudes);
-				setFilteredLabels(frequencies);
-
-				// Update the filtered FFT label max
-				const max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
-				setFilteredLabelMax(max + 5);
-			});
 		});
 
 		// Cleanup event listeners
@@ -147,7 +151,7 @@ export const RealTimeChart = () => {
 			micListener.then((unlisten) => unlisten());
 			filteredMicListener.then((unlisten) => unlisten());
 		};
-	}, [filteredMicData, micData, setFilteredLabelMax, setFilteredLabels, setFilteredMicData, setFilteredSpectrumData, setLabelMax, setLabels, setMicData, setSpectrumData]);
+	}, [setFilteredMicData, setMicData]);
 
 	const calculateBPM = () => {
 		const values = filteredMicData.map((point) => point.y);
