@@ -48,8 +48,6 @@ pub fn run() {
 
             // Validate frequencies
             if high_pass >= low_pass {
-                println!("High-pass frequency must be less than low-pass frequency");
-
                 high_pass = 1.0;
                 low_pass = nyquist - 1.0;
             }

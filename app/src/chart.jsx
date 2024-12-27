@@ -1,52 +1,54 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { Line } from "react-chartjs-2";
 import { useDebounce } from "react-use";
+import {
+	bpmAtom,
+	filteredLabelMaxAtom,
+	filteredLabelsAtom,
+	filteredMicDataAtom,
+	filteredSpectrumDataAtom,
+	highPassAtom,
+	labelMaxAtom,
+	labelsAtom,
+	lowPassAtom,
+	micDataAtom,
+	spectrumDataAtom,
+} from "./atoms";
+import { FFTChart } from "./charts/fftChart";
+import { FilteredFFTChart } from "./charts/filteredFftChart";
+import { FilteredMicChart } from "./charts/filteredMicChart";
+import { MicChart } from "./charts/micChart";
 
 export const RealTimeChart = () => {
-	// Mic data state
-	const [data, setData] = useState({
-		datasets: [
-			{
-				label: "Mic Data",
-				borderColor: "blue",
-				fill: false,
-				data: [], // Initial empty dataset
-			},
-		],
-	});
-	const [filteredData, setFilteredData] = useState({
-		datasets: [
-			{
-				label: "Filtered Data",
-				borderColor: "red",
-				fill: false,
-				data: [], // Initial empty dataset
-			},
-		],
-	});
+	// Signal data states
+	const [micData, setMicData] = useAtom(micDataAtom);
+	const [filteredMicData, setFilteredMicData] = useAtom(filteredMicDataAtom);
 
 	// FFT data state
-	const [spectrumData, setSpectrumData] = useState([]);
-	const [filteredSpectrumData, setFilteredSpectrumData] = useState([]);
+	const [, setSpectrumData] = useAtom(spectrumDataAtom);
+	const [, setFilteredSpectrumData] = useAtom(
+		filteredSpectrumDataAtom,
+	);
 
 	// FFT labels state
-	const [labels, setLabels] = useState([]);
-	const [filteredLabels, setFilteredLabels] = useState([]);
+	const [, setLabels] = useAtom(labelsAtom);
+	const [, setFilteredLabels] = useAtom(filteredLabelsAtom);
 
 	// FFT Label Max
-	const [labelMax, setLabelMax] = useState(10);
-	const [filteredLabelMax, setFilteredLabelMax] = useState(10);
+	const [, setLabelMax] = useAtom(labelMaxAtom);
+	const [, setFilteredLabelMax] =
+		useAtom(filteredLabelMaxAtom);
 
 	// Filter and spectrum region state
-	const [highPass, setHighPass] = useState(20);
-	const [lowPass, setLowPass] = useState(3999);
+	const [lowPass, setLowPass] = useAtom(lowPassAtom);
+	const [highPass, setHighPass] = useAtom(highPassAtom);
 	const [debouncedLowPass, setDebouncedLowPass] = useState(lowPass);
 	const [debouncedHighPass, setDebouncedHighPass] = useState(highPass);
 
 	// BPM state
-	const [bpm, setBpm] = useState(0);
+	const [bpm, setBpm] = useAtom(bpmAtom);
 
 	useDebounce(
 		() => {
@@ -80,32 +82,22 @@ export const RealTimeChart = () => {
 		// Attach event listeners
 		const micListener = listen("mic", (event) => {
 			// Parse the mic data and update, already comes as a voltage value between 0V and 5V
-			const micData = event.payload;
+			const { payload } = event;
 
 			const newDataPoint = {
 				x: Date.now(),
-				y: micData,
+				y: payload,
 			};
 
-			setData((prevData) => {
-				const updatedDataset = [
-					...prevData.datasets[0].data,
-					newDataPoint,
-				];
-				return {
-					datasets: [
-						{
-							...prevData.datasets[0],
-							data: updatedDataset, // Update the dataset with new point
-						},
-					],
-				};
+			setMicData((prevData) => {
+				const updatedSignal = [...prevData, newDataPoint];
+				return updatedSignal;
 			});
 
 			// Apply FFT to the mic data
-			const values = data.datasets[0].data.map((point) => point.y);
+			const values = micData.map((point) => point.y);
 			invoke("apply_fft", {
-				signal: values
+				signal: values,
 			}).then((fftData) => {
 				const { frequencies, magnitudes } = fftData;
 
@@ -114,39 +106,29 @@ export const RealTimeChart = () => {
 				setLabels(frequencies);
 
 				// Update the FFT label max
-				let max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
+				const max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
 				setLabelMax(max + 5);
 			});
 		});
 
 		const filteredMicListener = listen("filtered_mic", (event) => {
-			// Parse the mic data and update, already comes as a voltage value between 0V and 5V
-			const micData = event.payload;
+			// Parse the filtered data and update, already comes as a voltage value between 0V and 5V
+			const { payload } = event;
 
 			const newDataPoint = {
 				x: Date.now(),
-				y: micData,
+				y: payload,
 			};
 
-			setFilteredData((prevData) => {
-				const updatedDataset = [
-					...prevData.datasets[0].data,
-					newDataPoint,
-				];
-				return {
-					datasets: [
-						{
-							...prevData.datasets[0],
-							data: updatedDataset, // Update the dataset with new point
-						},
-					],
-				};
+			setFilteredMicData((prevData) => {
+				const updatedSignal = [...prevData, newDataPoint];
+				return updatedSignal;
 			});
 
-			// Apply FFT to the mic data
-			const values = data.datasets[0].data.map((point) => point.y);
+			// Apply FFT to the filtered data
+			const values = filteredMicData.map((point) => point.y);
 			invoke("apply_fft", {
-				signal: values
+				signal: values,
 			}).then((fftData) => {
 				const { frequencies, magnitudes } = fftData;
 
@@ -155,7 +137,7 @@ export const RealTimeChart = () => {
 				setFilteredLabels(frequencies);
 
 				// Update the filtered FFT label max
-				let max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
+				const max = Math.ceil(Math.max(...magnitudes) / 10) * 10;
 				setFilteredLabelMax(max + 5);
 			});
 		});
@@ -165,140 +147,13 @@ export const RealTimeChart = () => {
 			micListener.then((unlisten) => unlisten());
 			filteredMicListener.then((unlisten) => unlisten());
 		};
-	}, [
-		data.datasets,
-		debouncedHighPass,
-		debouncedLowPass,
-		filteredData.datasets,
-		highPass,
-		lowPass,
-	]);
-
-	const micChartOptions = {
-		responsive: true,
-		animation: false,
-		scales: {
-			x: {
-				type: "realtime",
-				realtime: {
-					duration: 1000 * 5, // save/show last 10 seconds of data
-					refresh: 1000 * 0.0001,
-					delay: 1000 * 0.0001,
-					pause: false,
-				},
-			},
-			y: {
-				beginAtZero: true,
-				min: 0,
-				max: +5,
-			},
-		},
-		plugins: {
-			streaming: {
-				frameRate: 60,
-			},
-		},
-	};
-
-	const filteredChartOptions = {
-		responsive: true,
-		animation: false,
-		scales: {
-			x: {
-				type: "realtime",
-				realtime: {
-					duration: 1000 * 5, // save/show last 10 seconds of data
-					refresh: 1000 * 0.0001,
-					delay: 1000 * 0.0001,
-					pause: false,
-				},
-			},
-			y: {
-				beginAtZero: true,
-				min: 0,
-				max: +5,
-			},
-		},
-		plugins: {
-			streaming: {
-				frameRate: 60,
-			},
-		},
-	};
-
-	const spectrumChartData = {
-		labels,
-		datasets: [
-			{
-				label: "Frequency Spectrum",
-				data: spectrumData,
-				borderColor: "blue",
-				fill: false,
-			},
-		],
-	};
-
-	const filteredSpectrumChartData = {
-		labels: filteredLabels,
-		datasets: [
-			{
-				label: "Filtered Frequency Spectrum",
-				data: filteredSpectrumData,
-				borderColor: "red",
-				fill: false,
-			},
-		],
-	};
-
-	const spectrumChartOptions = {
-		responsive: true,
-		animation: false,
-		scales: {
-			x: {
-				title: {
-					display: true,
-					text: "Frequency (Hz)",
-				},
-				beginAtZero: true,
-			},
-			y: {
-				title: {
-					display: true,
-					text: "Magnitude",
-				},
-				max: labelMax,
-			},
-		},
-	};
-
-	const filteredSpectrumChartOptions = {
-		responsive: true,
-		animation: false,
-		scales: {
-			x: {
-				title: {
-					display: true,
-					text: "Frequency (Hz)",
-				},
-				beginAtZero: true,
-			},
-			y: {
-				title: {
-					display: true,
-					text: "Magnitude",
-				},
-				max: filteredLabelMax,
-			},
-		},
-	};
+	}, [filteredMicData, micData, setFilteredLabelMax, setFilteredLabels, setFilteredMicData, setFilteredSpectrumData, setLabelMax, setLabels, setMicData, setSpectrumData]);
 
 	const calculateBPM = () => {
-		console.log("Calculating BPM");
-		const values = filteredData.datasets[0].data.map((point) => point.y);
+		const values = filteredMicData.map((point) => point.y);
 		invoke("bpm", {
-			signal: values
+			signal: values,
 		}).then((bpm) => {
-			console.log(bpm)
 			setBpm(bpm);
 		});
 	};
@@ -318,7 +173,10 @@ export const RealTimeChart = () => {
 					{debouncedLowPass} Hz) - BPM: {bpm}
 				</div>
 
-				<button className="col-span-2 bg-blue-500 text-white font-semibold py-2 rounded-md hover:bg-blue-600" onClick={calculateBPM}>
+				<button
+					className="col-span-2 bg-blue-500 text-white font-semibold py-2 rounded-md hover:bg-blue-600"
+					onClick={calculateBPM}
+				>
 					Calculate BPM
 				</button>
 
@@ -355,42 +213,16 @@ export const RealTimeChart = () => {
 
 			{/* Charts */}
 			<div className="grid grid-cols-2 gap-4 w-full max-w-4xl">
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-					<Line
-						className="h-full w-full"
-						data={data}
-						options={micChartOptions}
-						height={512}
-						width={512}
-					/>
-				</div>
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-					<Line
-						className="h-full w-full"
-						data={filteredData}
-						options={filteredChartOptions}
-						height={512}
-						width={512}
-					/>
-				</div>
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-					<Line
-						className="h-full w-full"
-						data={spectrumChartData}
-						options={spectrumChartOptions}
-						height={512}
-						width={512}
-					/>
-				</div>
-				<div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-					<Line
-						className="h-full w-full"
-						data={filteredSpectrumChartData}
-						options={filteredSpectrumChartOptions}
-						height={512}
-						width={512}
-					/>
-				</div>
+				{[MicChart, FilteredMicChart, FFTChart, FilteredFFTChart].map(
+					(Chart, index) => (
+						<div
+							key={index}
+							className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center"
+						>
+							<Chart />
+						</div>
+					),
+				)}
 			</div>
 		</div>
 	);
