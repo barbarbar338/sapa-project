@@ -16,10 +16,10 @@ This project is a simple electric stethoscope that can be used to listen to the 
   - 1 x 22kΩ
   - 1 x 100kΩ
 - Capacitors
-  - 1 x 5nF
-  - 1 x 470nF
+  - 2 x 10nF (Connected in series for 5nF)
+  - 1 x 47nF
   - 1 x 1uF
-- 1 x Low-Noise Operational Amplifier (1 x NE5532)
+- 1 x Low-Noise Operational Amplifier (NE5532, TL072, etc.)
 - Breadboard
 - Jumper wires
 - Optional:
@@ -31,23 +31,23 @@ This project is a simple electric stethoscope that can be used to listen to the 
 
 - Arduino IDE
 - LTspice
-- Node.js 20 or higher
-- Visual Studio Build Tools 2017 or higher
 - Python 3.6 or higher
-- Yarn 1.22.22 or higher
-- Rust 1.83.0 or higher
-- Tauri (With its dependencies)
 
 ## Running the project
 
 - Clone the repository
-- Open the Arduino IDE and upload the `StandartFirmataPlus` file to the Arduino Uno
-  - File -> Examples -> Firmata -> StandartFirmataPlus
-  - Or simply open the `StandartFirmataPlus` folder and upload the firmware to the Arduino Uno
+- Connect Arduino Uno to your computer
 - Build the circuit following the [circuit diagram](https://crcit.net/c/c403772aff41427b846746d022f3cfba)
-- Run backend server, see the [be](be/README.md) for more information
-- Run frontend server, see the [fe](fe/README.md) for more information
-- Open the `localhost:3000` on your browser
+- Connect circuit to Arduino Uno
+- Open the Arduino IDE and upload the `arduino/arduino.ino` file to the Arduino Uno
+- Run Python server by running the following commands:
+
+  ```bash
+  cd app
+  pip install -r requirements.txt
+  python main.py
+  ```
+
 - Enjoy!
 
 ## Circuit Diagram

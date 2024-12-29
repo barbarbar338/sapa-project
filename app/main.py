@@ -42,6 +42,7 @@ nyquist_freq = 0.5 * sample_rate
 
 
 def create_filter():
+    # Select cutoff frequencies based on filter type
     if filter_type == "lowpass":
         normalized_cutoff = upper_cutoff_freq / nyquist_freq
     elif filter_type == "highpass":
@@ -52,6 +53,7 @@ def create_filter():
             upper_cutoff_freq / nyquist_freq,
         ]
 
+    # Create filter based on method
     if filter_method == "butter":
         return signal.butter(
             filter_order, normalized_cutoff, btype=filter_type, analog=False
@@ -113,6 +115,7 @@ fig.tight_layout()
 
 # Function to animate the plot
 def animate(i):
+    # Read data from serial port. Read Arduino code for more details
     data_buffer = ""
     while ser.in_waiting > 0:
         try:
@@ -128,7 +131,7 @@ def animate(i):
                         analog_value = int(value_str)
                         normalized = (
                             (analog_value / 1024.0) * 5.0
-                        ) - 2.5  # Normalize and zero center
+                        ) - 2.5  # Normalize and zero center because most of the dsp functions require zero centered data
 
                         analog_data.append(normalized)
                         time_data.append(time.time())
@@ -158,6 +161,7 @@ def animate(i):
         ax1.relim()
         ax1.autoscale_view()
 
+        # FFT of analog signal
         yf = np.fft.fft(list(analog_data))
         T = 1.0 / sample_rate
         xf = np.fft.fftfreq(len(analog_data), T)[: len(analog_data) // 2]
@@ -169,6 +173,7 @@ def animate(i):
         ax3.relim()
         ax3.autoscale_view()
 
+        # FFT of filtered signal
         yff = np.fft.fft(list(filtered_data))
         xff = np.fft.fftfreq(len(filtered_data), T)[: len(filtered_data) // 2]
         line4.set_data(xff, np.abs(yff[0 : len(filtered_data) // 2]))
@@ -178,7 +183,7 @@ def animate(i):
     return (line1, line2, line3, line4)
 
 
-# Function to calculate BPM
+# Function to calculate BPM, not working properly :D
 def calculate_bpm():
     if len(filtered_data) > 1:
         # Detect peaks in the filtered signal (which corresponds to heartbeats)
@@ -214,6 +219,7 @@ def update_filter_params():
         new_filter_type = filter_type_var.get()
         new_filter_method = filter_method_var.get()
 
+        # Validate filter parameters according to Nyquist sapmling theorem
         if new_lower_cutoff <= 0 or new_order <= 0:
             raise ValueError("Cutoff frequencies and order must be positive.")
         if new_lower_cutoff >= nyquist_freq or (
@@ -332,6 +338,10 @@ threading.Thread(target=create_gui, daemon=True).start()
 
 # Start the animation
 ani = animation.FuncAnimation(
-    fig, animate, interval=1 / 144, blit=True, cache_frame_data=False
+    fig,
+    animate,
+    interval=1 / 144,  # 144 Hz refresh rate, adjust as needed
+    blit=True,
+    cache_frame_data=False,
 )
 plt.show()
